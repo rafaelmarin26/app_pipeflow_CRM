@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+/* Dark mode is driven by a `dark` class on <html>, set by the theme toggle. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Design tokens — CLAUDE.md §7.
+ * Components never hardcode a hex value; they consume these tokens.
+ */
+:root {
+  /* brand */
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-foreground: #ffffff;
+  --accent: #8b5cf6;
+
+  /* surfaces */
+  --bg: #ffffff;
+  --surface: #f8fafc;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --muted: #64748b;
+
+  /* funnel semantics — color is information, never decoration */
+  --won: #16a34a;
+  --lost: #dc2626;
+  --open: #4f46e5;
+  --due: #f59e0b;
+}
+
+.dark {
+  --primary: #6366f1;
+  --primary-hover: #818cf8;
+  --primary-foreground: #ffffff;
+  --accent: #a78bfa;
+
+  --bg: #0b1120;
+  --surface: #111827;
+  --border: #1e293b;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+
+  --won: #22c55e;
+  --lost: #ef4444;
+  --open: #6366f1;
+  --due: #fbbf24;
+}
+
+/* Expose the tokens as Tailwind utilities: bg-surface, text-muted, border-border, ... */
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+
+  --color-won: var(--won);
+  --color-lost: var(--lost);
+  --color-open: var(--open);
+  --color-due: var(--due);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Monetary values: R$ columns have to line up. */
+@utility money {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+}

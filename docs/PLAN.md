@@ -50,16 +50,16 @@ Componentes recebem dados **via props**, nunca importam o mock diretamente. Só 
 
 ### Entregas
 
-- [ ] `git init` e primeiro commit; `.gitignore` cobrindo `.env*.local`, `node_modules`, `.next`
-- [ ] Scaffold Next.js 15 com App Router, TypeScript `strict`, ESLint e alias `@/*`
-- [ ] Tailwind CSS 4 configurado
-- [ ] Tokens da paleta indigo como CSS variables em `app/globals.css`, nas duas variantes (claro e escuro)
-- [ ] Cores semânticas do funil registradas como tokens (`--won`, `--lost`, `--open`, `--due`)
-- [ ] Fonte Inter via `next/font/google`, com `tabular-nums` utilitário para valores monetários
-- [ ] Dark mode por classe, com toggle funcionando
-- [ ] Estrutura de pastas do CLAUDE.md §3 criada (route groups vazios, `lib/`, `types/`, `components/`)
-- [ ] `.env.example` versionado com as 8 chaves da seção 6, todas vazias
-- [ ] `README.md` curto: o que é, como rodar, link para PRD e CLAUDE.md
+- [x] `git init` e primeiro commit; `.gitignore` cobrindo `.env*.local`, `node_modules`, `.next`
+- [x] Scaffold Next.js 15 com App Router, TypeScript `strict`, ESLint e alias `@/*`
+- [x] Tailwind CSS 4 configurado
+- [x] Tokens da paleta indigo como CSS variables em `app/globals.css`, nas duas variantes (claro e escuro)
+- [x] Cores semânticas do funil registradas como tokens (`--won`, `--lost`, `--open`, `--due`)
+- [x] Fonte Inter via `next/font/google`, com `tabular-nums` utilitário para valores monetários
+- [x] Dark mode por classe, com toggle funcionando
+- [x] Estrutura de pastas do CLAUDE.md §3 criada (route groups vazios, `lib/`, `types/`, `components/`)
+- [x] `.env.example` versionado com as 8 chaves da seção 6, todas vazias
+- [x] `README.md` curto: o que é, como rodar, link para PRD e CLAUDE.md
 
 ### Validação
 
