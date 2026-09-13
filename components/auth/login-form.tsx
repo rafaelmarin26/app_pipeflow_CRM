@@ -61,7 +61,6 @@ export function LoginForm() {
           {...register("password")}
           {...fieldAria({ id: "password", error: errors.password?.message })}
           autoComplete="current-password"
-          placeholder="••••••••"
         />
       </Field>
 
