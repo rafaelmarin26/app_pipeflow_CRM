@@ -259,7 +259,7 @@ PT-BR direto e profissional, sem jargão corporativo e sem infantilização. "Ne
 
 ## 8. Milestones
 
-O roteiro de execução vive em **[docs/PLAN.md](docs/PLAN.md)** — 17 milestones, cada um com branch, objetivo, entregas em checkbox, critério de validação e commit final. É o documento a consultar antes de começar qualquer etapa, e a fonte de verdade do sequenciamento.
+O roteiro de execução vive em **[docs/PLAN.md](docs/PLAN.md)** — 17 milestones, cada um com objetivo, entregas em checkbox, critério de validação e commit final. É o documento a consultar antes de começar qualquer etapa, e a fonte de verdade do sequenciamento.
 
 **Ordem de construção: interface primeiro, backend depois.** As telas são montadas com dados falsos antes de existir qualquer linha de Supabase, para validar fluxos enquanto mudar ainda é barato. Os mocks têm exatamente o formato do banco — mesmos nomes de campo, mesmos enums — e componentes recebem dados via props, nunca importando o mock. Assim, trocar mock por query real é uma alteração pontual, não uma refatoração.
 
@@ -271,7 +271,7 @@ O roteiro de execução vive em **[docs/PLAN.md](docs/PLAN.md)** — 17 mileston
 | 3 — Backend | M10–M16 | Schema e RLS, auth, persistência, colaboração, Stripe |
 | 4 — Entrega | M17 | Polimento, hardening e produção |
 
-Um milestone por vez: terminar, validar e commitar antes de abrir a próxima branch. M10 é o gargalo — nada da Fase 3 começa antes do schema com RLS provada.
+Um milestone por vez: terminar, validar e commitar na `main` antes de começar o próximo. M10 é o gargalo — nada da Fase 3 começa antes do schema com RLS provada.
 
 ---
 
@@ -299,4 +299,4 @@ npx shadcn@latest add <component>
 - Mudou requisito? Atualizar o PRD **antes** de escrever o código.
 - Mudou decisão técnica (versão, biblioteca, convenção)? Atualizar este arquivo na mesma leva.
 - Skills disponíveis em `.claude/skills/` cobrem Supabase/Postgres, Stripe, frontend, backend e segurança — usar quando a tarefa encostar nesses temas.
-- Trabalhar um milestone por vez, seguindo [docs/PLAN.md](docs/PLAN.md). Terminar, validar e marcar as entregas antes de abrir a próxima branch.
+- Trabalhar um milestone por vez, seguindo [docs/PLAN.md](docs/PLAN.md). Terminar, validar e marcar as entregas antes de começar o próximo.

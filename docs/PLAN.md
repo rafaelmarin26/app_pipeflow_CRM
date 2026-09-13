@@ -1,6 +1,6 @@
 # PipeFlow CRM — Plano de Execução
 
-Roteiro de build do setup ao deploy. Cada milestone é um incremento entregável, com branch própria, entregas verificáveis e um commit final.
+Roteiro de build do setup ao deploy. Cada milestone é um incremento entregável, com entregas verificáveis e um commit final.
 
 **Fontes:** escopo em [PRD.md](PRD.md) · stack, convenções e identidade visual em [../CLAUDE.md](../CLAUDE.md).
 
@@ -8,8 +8,8 @@ Roteiro de build do setup ao deploy. Cada milestone é um incremento entregável
 
 ## Como usar este plano
 
-- **Um milestone por vez.** Terminar, validar e commitar antes de abrir a próxima branch.
-- **Branches** a partir de `main`, merge de volta ao concluir. Padrão: `chore/*` para infraestrutura, `feat/*` para funcionalidade.
+- **Um milestone por vez.** Terminar, validar e commitar antes de começar o próximo.
+- **Sem branch por milestone.** O trabalho é commitado direto na `main` e o histórico fica linear — um commit por milestone, sem commit de merge. É um projeto solo; ramificar só adiciona ruído ao grafo.
 - **Commits** em inglês, Conventional Commits. O commit final listado é o que fecha o milestone — commits intermediários são livres.
 - **Checkboxes** marcados apenas quando a entrega está funcionando, não quando o arquivo existe.
 - **Validação** de cada milestone é o teste manual mínimo antes de avançar.
@@ -44,8 +44,6 @@ Componentes recebem dados **via props**, nunca importam o mock diretamente. Só 
 
 ## M1 · Setup do projeto
 
-**Branch:** `chore/project-setup`
-
 **Objetivo:** deixar o projeto de pé com a stack fixada no CLAUDE.md, tokens visuais aplicados e a estrutura de pastas criada — nenhuma tela ainda.
 
 ### Entregas
@@ -70,8 +68,6 @@ Componentes recebem dados **via props**, nunca importam o mock diretamente. Só 
 ---
 
 ## M2 · Design system
-
-**Branch:** `feat/design-system`
 
 **Objetivo:** ter o vocabulário visual pronto — componentes shadcn instalados, helpers de formatação, rótulos PT-BR e os fixtures que alimentam toda a Fase 1 e 2.
 
@@ -99,8 +95,6 @@ Uma página de teste renderiza todos os badges com as cores corretas, um empty s
 
 ## M3 · Landing page
 
-**Branch:** `feat/landing-page`
-
 **Objetivo:** entregar a página pública completa — é a primeira coisa demonstrável e não depende de nada.
 
 ### Entregas
@@ -124,8 +118,6 @@ Percorrer a página em mobile e desktop sem quebra de layout; todos os CTAs apon
 
 ## M4 · Shell da aplicação
 
-**Branch:** `feat/app-shell`
-
 **Objetivo:** o esqueleto de toda a área autenticada — sidebar, troca de workspace e navegação. Sem auth real ainda.
 
 ### Entregas
@@ -148,8 +140,6 @@ Navegar entre as 4 rotas mantendo a sidebar montada; item ativo correto; drawer 
 ---
 
 ## M5 · Telas de acesso e onboarding
-
-**Branch:** `feat/auth-screens`
 
 **Objetivo:** todas as telas do fluxo de entrada, visualmente completas e com validação de formulário — sem chamar o Supabase.
 
@@ -175,8 +165,6 @@ Submeter cada formulário vazio e ver as mensagens de erro em PT-BR; fluxo signu
 
 ## M6 · Interface de leads
 
-**Branch:** `feat/leads-ui`
-
 **Objetivo:** listagem, busca, filtros, cadastro e página de detalhe com timeline — tudo lendo de `mock-data.ts`.
 
 ### Entregas
@@ -201,8 +189,6 @@ Buscar, filtrar, limpar filtros e recarregar a página mantendo o estado pela UR
 ---
 
 ## M7 · Pipeline Kanban
-
-**Branch:** `feat/pipeline-ui`
 
 **Objetivo:** a tela herói do produto. Drag-and-drop fluido com estado local — a persistência entra no M13.
 
@@ -230,8 +216,6 @@ Arrastar um card entre todas as colunas; mover com teclado; totais por coluna re
 
 ## M8 · Dashboard
 
-**Branch:** `feat/dashboard-ui`
-
 **Objetivo:** as métricas e o gráfico de funil, calculados sobre os mocks.
 
 ### Entregas
@@ -253,8 +237,6 @@ Conferir os 4 números à mão contra o mock; gráfico responsivo sem estourar o
 ---
 
 ## M9 · Configurações
-
-**Branch:** `feat/settings-ui`
 
 **Objetivo:** as três abas de configuração, incluindo a tela de plano — ainda sem Stripe.
 
@@ -284,8 +266,6 @@ Alternar o papel no mock e confirmar que a UI de Admin desaparece; barras de uso
 
 ## M10 · Banco de dados e RLS
 
-**Branch:** `feat/database-schema`
-
 **Objetivo:** o schema completo com isolamento multi-empresa provado. É a fundação de todo o resto — nenhum atalho aqui.
 
 ### Entregas
@@ -313,8 +293,6 @@ Autenticado como membro do workspace A, consultar dados do workspace B retorna *
 
 ## M11 · Autenticação real
 
-**Branch:** `feat/auth-backend`
-
 **Objetivo:** ligar as telas do M5 ao Supabase Auth e proteger a área autenticada.
 
 ### Entregas
@@ -338,8 +316,6 @@ Criar conta nova → onboarding → dashboard. Acessar `/dashboard` deslogado re
 ---
 
 ## M12 · Leads e atividades persistidos
-
-**Branch:** `feat/leads-backend`
 
 **Objetivo:** substituir o mock de leads por Server Actions e queries reais.
 
@@ -365,8 +341,6 @@ Criar lead em duas contas de workspaces diferentes e confirmar isolamento. Busca
 
 ## M13 · Pipeline persistido
 
-**Branch:** `feat/pipeline-backend`
-
 **Objetivo:** o drag-and-drop do M7 gravando no banco, com atualização otimista.
 
 ### Entregas
@@ -389,8 +363,6 @@ Arrastar um card, recarregar a página e ver o card na nova etapa. Simular falha
 
 ## M14 · Dashboard com dados reais
 
-**Branch:** `feat/dashboard-backend`
-
 **Objetivo:** as métricas do M8 calculadas sobre o banco.
 
 ### Entregas
@@ -412,8 +384,6 @@ Conferir os 4 números contra consultas SQL diretas. Criar um negócio novo e ve
 ---
 
 ## M15 · Multi-empresa e colaboração
-
-**Branch:** `feat/collaboration`
 
 **Objetivo:** convites por e-mail, papéis aplicados no servidor e troca real de workspace.
 
@@ -439,8 +409,6 @@ Convidar um segundo e-mail, aceitar em outra sessão e confirmar o papel correto
 ---
 
 ## M16 · Cobrança com Stripe
-
-**Branch:** `feat/stripe-billing`
 
 **Objetivo:** monetização ponta a ponta, com os limites do Free aplicados no servidor.
 
@@ -470,8 +438,6 @@ Checkout com o cartão de teste 4242 4242 4242 4242 libera o Pro. Reenviar o mes
 # FASE 4 — Entrega
 
 ## M17 · Hardening e deploy
-
-**Branch:** `chore/production-release`
 
 **Objetivo:** fechar as pontas e colocar em produção.
 
