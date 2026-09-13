@@ -73,15 +73,17 @@ Componentes recebem dados **via props**, nunca importam o mock diretamente. Só 
 
 ### Entregas
 
-- [ ] shadcn/ui inicializado, apontando para os tokens do M1 (não para a paleta padrão)
-- [ ] Componentes base instalados: `button`, `input`, `label`, `select`, `dialog`, `dropdown-menu`, `table`, `badge`, `card`, `avatar`, `tabs`, `sonner`, `skeleton`, `separator`, `sheet`
-- [ ] `lib/utils.ts` — `cn()`, `formatCurrency()` (R$ com centavos), `formatDate()` e `formatRelativeDate()` com locale `ptBR`
-- [ ] `lib/labels.ts` — mapa de todos os enums para rótulos PT-BR (`deal_stage`, `lead_status`, `activity_type`, `member_role`, `plan`)
-- [ ] `types/database.ts` escrito **à mão** por ora, espelhando o modelo de dados do CLAUDE.md §4 — será substituído pelo gerado no M10
-- [ ] `lib/mock-data.ts` — fixtures tipadas: 1 workspace, 3 membros, ~20 leads, ~15 deals distribuídos nas 6 etapas, ~30 atividades
-- [ ] `components/shared/stage-badge.tsx` e `status-badge.tsx` — cor semântica derivada do enum
-- [ ] `components/shared/empty-state.tsx` — ícone, frase PT-BR e slot de ação
-- [ ] `components/shared/page-header.tsx` — título, descrição e slot de ação primária única
+- [x] shadcn/ui inicializado, apontando para os tokens do M1 (não para a paleta padrão)
+- [x] Componentes base instalados: `button`, `input`, `label`, `select`, `dialog`, `dropdown-menu`, `table`, `badge`, `card`, `avatar`, `tabs`, `sonner`, `skeleton`, `separator`, `sheet`
+- [x] `lib/utils.ts` — `cn()`, `formatCurrency()` (R$ com centavos), `formatDate()` e `formatRelativeDate()` com locale `ptBR`
+- [x] `lib/labels.ts` — mapa de todos os enums para rótulos PT-BR (`deal_stage`, `lead_status`, `activity_type`, `member_role`, `plan`)
+- [x] `types/database.ts` escrito **à mão** por ora, espelhando o modelo de dados do CLAUDE.md §4 — será substituído pelo gerado no M10
+- [x] `lib/mock-data.ts` — fixtures tipadas: 3 workspaces, 3 membros, 20 leads, 15 deals distribuídos nas 6 etapas, 30 atividades
+- [x] `components/shared/stage-badge.tsx` e `status-badge.tsx` — cor semântica derivada do enum
+- [x] `components/shared/empty-state.tsx` — ícone, frase PT-BR e slot de ação
+- [x] `components/shared/page-header.tsx` — título, descrição e slot de ação primária única
+
+> **Desvios registrados.** (1) O plano pedia 1 workspace; os fixtures trazem 3, porque o switcher do M4 precisa de destino para onde ir. (2) shadcn e o CLAUDE.md colidem nos nomes `muted` e `accent`; a reconciliação está documentada em CLAUDE.md §7, "Dois vocabulários, uma paleta".
 
 ### Validação
 
@@ -122,14 +124,17 @@ Percorrer a página em mobile e desktop sem quebra de layout; todos os CTAs apon
 
 ### Entregas
 
-- [ ] `app/(app)/layout.tsx` — grid sidebar + conteúdo, com scroll independente
-- [ ] Sidebar: logo, navegação (Dashboard, Leads, Pipeline, Configurações) com estado ativo
-- [ ] Workspace switcher no topo da sidebar — dropdown listando os workspaces do mock
-- [ ] Menu do usuário no rodapé da sidebar: avatar, nome, tema, sair
-- [ ] Drawer mobile (`sheet`) substituindo a sidebar abaixo de `md`
-- [ ] Páginas placeholder das 4 rotas, cada uma com `PageHeader`
-- [ ] `loading.tsx` com skeleton e `error.tsx` em `(app)`
-- [ ] `not-found.tsx` da aplicação
+- [x] `app/(app)/layout.tsx` — grid sidebar + conteúdo, com scroll independente
+- [x] Sidebar: logo, navegação (Dashboard, Leads, Pipeline, Configurações) com estado ativo
+- [x] Workspace switcher no topo da sidebar — dropdown listando os workspaces do mock
+- [x] Barra superior: gatilho do menu mobile, trilha `workspace › seção` e alternador de tema
+- [x] Menu do usuário no rodapé da sidebar: avatar, nome, papel, e-mail, sair
+- [x] Drawer mobile (`sheet`) substituindo a sidebar abaixo de `md`, com o mesmo componente de conteúdo
+- [x] Páginas placeholder das 4 rotas, cada uma com `PageHeader`
+- [x] `loading.tsx` com skeleton e `error.tsx` em `(app)`
+- [x] `not-found.tsx` da aplicação
+
+> **Desvio registrado.** O plano original punha o alternador de tema dentro do menu do usuário. Ele foi para a barra superior — controle de um clique, sem duplicata — e a barra superior, pedida depois do plano original, entrou como entrega própria.
 
 ### Validação
 
