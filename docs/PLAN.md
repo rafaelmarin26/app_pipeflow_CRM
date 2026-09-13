@@ -151,13 +151,15 @@ Navegar entre as 4 rotas mantendo a sidebar montada; item ativo correto; drawer 
 
 ### Entregas
 
-- [ ] `login` — e-mail e senha, link de recuperação, link para signup
-- [ ] `signup` — nome, e-mail e senha, com regra de senha visível
-- [ ] Validação client com `react-hook-form` + `zod` (schemas em `lib/validations/auth.ts`)
-- [ ] Estados de erro por campo e estado de carregamento no botão
-- [ ] `onboarding` — passo único: nomear o primeiro workspace, com slug derivado automaticamente
+- [x] `login` — e-mail e senha, link de recuperação, link para signup
+- [x] `signup` — nome, e-mail e senha, com regra de senha visível
+- [x] Validação client com `react-hook-form` + `zod` (schemas em `lib/validations/auth.ts`)
+- [x] Estados de erro por campo e estado de carregamento no botão
+- [x] `onboarding` — passo único: nomear o primeiro workspace, com slug derivado automaticamente
 - [ ] `convite/[token]` — tela de aceite: nome do workspace, quem convidou, papel oferecido
-- [ ] Layout `(auth)` centrado, com a marca e fundo em gradiente indigo→violeta
+- [x] Layout `(auth)` centrado, com a marca e fundo em gradiente indigo→violeta
+
+> **Desvios registrados.** (1) `recuperar-senha/` entrou como tela própria: o login exige o link de recuperação e um link morto é pior que uma tela a mais. Ela valida o e-mail e mostra a confirmação de envio; o envio real é do M11. (2) As rotas com sidebar foram para o grupo `app/(app)/(shell)/` para que o onboarding, que roda antes de existir qualquer workspace, não herde a sidebar que existe para listá-los — registrado em CLAUDE.md §3. Nenhuma URL mudou. (3) A navegação é falsa por ora: os formulários validam os campos, aguardam uma latência simulada (`lib/fake-submit.ts`) e redirecionam — login → `/dashboard`, signup → `/onboarding`, onboarding → `/dashboard`. Nenhuma credencial é verificada. (4) A tela de convite fica pendente para fechar o milestone.
 
 ### Validação
 
