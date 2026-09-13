@@ -9,9 +9,9 @@ import type { DealStage } from "@/types/database";
  * from the enum, so a badge can never disagree with the column it sits in.
  */
 const toneClasses: Record<StageTone, string> = {
-  open: "border-open/25 bg-open/10 text-open",
-  won: "border-won/25 bg-won/10 text-won",
-  lost: "border-lost/25 bg-lost/10 text-lost",
+  open: "border-open/25 bg-open/10 text-open-ink",
+  won: "border-won/25 bg-won/10 text-won-ink",
+  lost: "border-lost/25 bg-lost/10 text-lost-ink",
 };
 
 export function StageBadge({

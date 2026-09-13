@@ -19,7 +19,7 @@ export default function AppError({
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
       <div className="flex max-w-md flex-col items-center gap-4 text-center">
-        <span className="flex size-12 items-center justify-center rounded-full bg-due/10 text-due">
+        <span className="flex size-12 items-center justify-center rounded-full bg-due/10 text-due-ink">
           <TriangleAlert className="size-6" aria-hidden />
         </span>
 

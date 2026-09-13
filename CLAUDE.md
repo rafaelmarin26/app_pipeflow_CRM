@@ -228,6 +228,15 @@ NEXT_PUBLIC_APP_URL                # http://localhost:3000 em dev
 
 Verde e vermelho são **exclusivos** de ganho/perdido. Não usar como cor decorativa em outro lugar — no Kanban, cor é informação. A única exceção é `--lost`, reaproveitado como cor de ação destrutiva (`variant="destructive"`), onde o vermelho é convenção de interface e não classificação de funil.
 
+**Cada cor semântica tem um par: o tom e a tinta.** O tom cheio (`--won`) é para preenchimento, barra de gráfico e borda. A tinta (`--won-ink`) é para **texto** sobre um fundo de 10–20% do mesmo tom. Os dois existem porque o tom cheio sobre a própria tinta falha o contraste AA: `#16A34A` sobre `bg-won/10` no tema claro dá 2,96:1, bem abaixo dos 4,5:1 exigidos para texto pequeno — e badge é `text-xs`.
+
+| Uso | Classe |
+|---|---|
+| Preenchimento, barra, borda | `bg-won` · `border-won/25` |
+| Texto sobre o tom a 10–20% | `text-won-ink` |
+
+Existem tintas para `won`, `lost`, `open`, `due`, `brand`, `muted` e `primary`, nas duas variantes de tema. **Nunca usar o tom cheio como cor de texto** — todos os pares foram medidos e passam AA (≥ 4,5:1) nos dois temas.
+
 ### Dois vocabulários, uma paleta
 
 Os componentes shadcn vendorizados em `components/ui/` falam o vocabulário próprio deles (`bg-background`, `bg-muted`, `bg-accent`). Em vez de editar 15 arquivos a cada atualização, `app/globals.css` mapeia esses nomes sobre os tokens acima. Dois nomes colidem, e nesses **o significado do shadcn prevalece**, porque os componentes dependem dele:

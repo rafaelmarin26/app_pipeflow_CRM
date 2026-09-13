@@ -31,6 +31,21 @@
   --due: #f59e0b;
 
   /*
+   * Ink pairs. The full tone above is for fills, bars and borders; the ink is
+   * the readable text version of it, for labels sitting on a 10-20% tint of the
+   * same colour. Measured against WCAG AA for small text (4.5:1) in both themes
+   * — the full tone fails that test on its own tint, which is why the pair
+   * exists at all.
+   */
+  --won-ink: #166534;
+  --lost-ink: #b91c1c;
+  --due-ink: #92400e;
+  --brand-ink: #6d28d9;
+  --muted-ink: #475569;
+  --primary-ink: #4338ca;
+  --open-ink: var(--primary-ink);
+
+  /*
    * Elevation. The two documented surfaces swap roles between themes: in light
    * the page is the tinted one and panels are white; in dark the page is the
    * darkest layer and panels sit above it. `--canvas` and `--panel` name the
@@ -64,6 +79,13 @@
   --lost: #ef4444;
   --open: #6366f1;
   --due: #fbbf24;
+
+  --won-ink: #4ade80;
+  --lost-ink: #fca5a5;
+  --due-ink: #fcd34d;
+  --brand-ink: #c4b5fd;
+  --muted-ink: #cbd5e1;
+  --primary-ink: #a5b4fc;
 
   --canvas: var(--bg);
   --panel: var(--surface);
@@ -115,11 +137,18 @@
   --color-brand: var(--accent);
   --color-primary-hover: var(--primary-hover);
 
-  /* funnel */
+  /* funnel: full tone for fills, ink for text on a tint of that tone */
   --color-won: var(--won);
   --color-lost: var(--lost);
   --color-open: var(--open);
   --color-due: var(--due);
+  --color-won-ink: var(--won-ink);
+  --color-lost-ink: var(--lost-ink);
+  --color-open-ink: var(--open-ink);
+  --color-due-ink: var(--due-ink);
+  --color-brand-ink: var(--brand-ink);
+  --color-muted-ink: var(--muted-ink);
+  --color-primary-ink: var(--primary-ink);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
