@@ -57,7 +57,11 @@ export function Topbar(props: SidebarContentProps) {
             Workspaces, seções do aplicativo e menu do usuário.
           </SheetDescription>
 
-          <SidebarContent {...props} onNavigate={() => setOpen(false)} />
+          <SidebarContent
+            {...props}
+            onNavigate={() => setOpen(false)}
+            onClose={() => setOpen(false)}
+          />
         </SheetContent>
       </Sheet>
 

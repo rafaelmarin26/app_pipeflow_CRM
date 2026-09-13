@@ -10,10 +10,10 @@ import type { LeadStatus } from "@/types/database";
  */
 const statusClasses: Record<LeadStatus, string> = {
   new: "border-border bg-transparent text-muted-foreground",
-  contacted: "border-open/25 bg-open/10 text-open",
-  qualified: "border-transparent bg-open text-primary-foreground",
-  unqualified: "border-transparent bg-muted text-muted-foreground",
-  customer: "border-transparent bg-brand text-white",
+  contacted: "border-open/25 bg-open/10 text-open-ink",
+  qualified: "border-open/40 bg-open/20 font-semibold text-open-ink",
+  unqualified: "border-transparent bg-muted text-muted-ink",
+  customer: "border-brand/30 bg-brand/15 text-brand-ink",
 };
 
 export function StatusBadge({
