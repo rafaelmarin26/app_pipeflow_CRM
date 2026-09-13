@@ -296,7 +296,7 @@ O roteiro de execução vive em **[docs/PLAN.md](docs/PLAN.md)** — 17 mileston
 | 3 — Backend | M10–M16 | Schema e RLS, auth, persistência, colaboração, Stripe |
 | 4 — Entrega | M17 | Polimento, hardening e produção |
 
-Um milestone por vez: terminar, validar e commitar na `main` antes de começar o próximo. M10 é o gargalo — nada da Fase 3 começa antes do schema com RLS provada.
+Um milestone por vez: terminar, validar e mesclar na `main` por Pull Request antes de começar o próximo. M10 é o gargalo — nada da Fase 3 começa antes do schema com RLS provada.
 
 ---
 
@@ -314,6 +314,17 @@ npx supabase gen types typescript --local > types/database.ts
 
 stripe listen --forward-to localhost:3000/api/stripe/webhook
 npx shadcn@latest add <component>
+```
+
+Fluxo de milestone — branch, PR e merge por rebase (histórico linear, sem commit de merge):
+
+```bash
+git switch -c feat/<slug> main
+# ... trabalho e commits ...
+git push -u origin feat/<slug>
+gh pr create --base main --title "feat: ..." --body-file <arquivo>
+gh pr merge --rebase --delete-branch
+git switch main && git pull --ff-only
 ```
 
 ---

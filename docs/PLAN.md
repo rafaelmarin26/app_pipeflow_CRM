@@ -9,7 +9,8 @@ Roteiro de build do setup ao deploy. Cada milestone é um incremento entregável
 ## Como usar este plano
 
 - **Um milestone por vez.** Terminar, validar e commitar antes de começar o próximo.
-- **Sem branch por milestone.** O trabalho é commitado direto na `main` e o histórico fica linear — um commit por milestone, sem commit de merge. É um projeto solo; ramificar só adiciona ruído ao grafo.
+- **Uma branch por milestone, fechada por Pull Request.** Criar `feat/<slug>` (ou `chore/`, `docs/`) a partir da `main`, abrir o PR no GitHub e mesclar com **rebase** — nunca com commit de merge —, apagando a branch em seguida. A `main` mantém histórico linear; como o rebase reescreve os SHAs, sincronizar o local com `git pull --ff-only` depois de cada merge.
+- **Remoto:** `origin` → https://github.com/rafaelmarin26/app_pipeflow_CRM
 - **Commits** em inglês, Conventional Commits. O commit final listado é o que fecha o milestone — commits intermediários são livres.
 - **Checkboxes** marcados apenas quando a entrega está funcionando, não quando o arquivo existe.
 - **Validação** de cada milestone é o teste manual mínimo antes de avançar.
