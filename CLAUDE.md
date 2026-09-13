@@ -226,7 +226,22 @@ NEXT_PUBLIC_APP_URL                # http://localhost:3000 em dev
 | Negócio aberto | `#4F46E5` |
 | Prazo próximo / atenção | `#F59E0B` |
 
-Verde e vermelho são **exclusivos** de ganho/perdido. Não usar como cor decorativa em outro lugar — no Kanban, cor é informação.
+Verde e vermelho são **exclusivos** de ganho/perdido. Não usar como cor decorativa em outro lugar — no Kanban, cor é informação. A única exceção é `--lost`, reaproveitado como cor de ação destrutiva (`variant="destructive"`), onde o vermelho é convenção de interface e não classificação de funil.
+
+### Dois vocabulários, uma paleta
+
+Os componentes shadcn vendorizados em `components/ui/` falam o vocabulário próprio deles (`bg-background`, `bg-muted`, `bg-accent`). Em vez de editar 15 arquivos a cada atualização, `app/globals.css` mapeia esses nomes sobre os tokens acima. Dois nomes colidem, e nesses **o significado do shadcn prevalece**, porque os componentes dependem dele:
+
+| Utilitário | Significado | Token do CLAUDE.md |
+|---|---|---|
+| `bg-muted` | superfície de baixo contraste | `--subtle` |
+| `text-muted-foreground` | **texto apagado** | `--muted` (#64748B) |
+| `bg-accent` | superfície de hover | `--subtle` |
+| `bg-brand` / `text-brand` | **violeta da marca** | `--accent` (#8B5CF6) |
+
+As variáveis CSS mantêm os nomes e os hexes desta seção; só os utilitários Tailwind mudam de nome. Na prática: texto secundário é `text-muted-foreground`, e o violeta da marca é `bg-brand`.
+
+Além disso, `--canvas` e `--panel` nomeiam o **papel** em vez do tom, porque as duas superfícies trocam de posição entre os temas: no claro a página é a tonalizada (`--surface`) e os painéis são brancos (`--bg`); no escuro a página é a camada mais baixa (`--bg`) e os painéis ficam acima (`--surface`).
 
 ### Tipografia
 
@@ -240,8 +255,9 @@ Verde e vermelho são **exclusivos** de ganho/perdido. Não usar como cor decora
 - Raio: `0.5rem` (`rounded-lg`) em cards e inputs; `9999px` em badges.
 - Sombras discretas: `shadow-sm` em repouso, `shadow-md` em card arrastado. Nada de sombra pesada.
 - Espaçamento em múltiplos de 4px. Padding de card: `p-4`; da página: `p-6`.
-- Densidade de tabela: linhas de 44px, cabeçalho `text-xs uppercase tracking-wide text-muted`.
-- Dark mode via classe, com os tokens acima — nunca hardcode de hex no componente.
+- Densidade de tabela: linhas de 44px, cabeçalho `text-xs uppercase tracking-wide text-muted-foreground`.
+- Dark mode via classe `dark` no `<html>`, com os tokens acima — nunca hardcode de hex no componente.
+- **O tema escuro é o padrão.** O servidor já renderiza `<html class="dark">`; um script inline remove a classe antes da primeira pintura quando o visitante escolheu claro explicitamente. A preferência do sistema operacional não é consultada — o produto tem um visual padrão e o usuário pode trocar.
 
 ### Princípios de interface
 

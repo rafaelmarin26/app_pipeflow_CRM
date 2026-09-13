@@ -1,107 +1,171 @@
-import { ThemeToggle } from "@/components/layout/theme-toggle";
+import Link from "next/link";
+import { Inbox } from "lucide-react";
+
+import { EmptyState } from "@/components/shared/empty-state";
+import { PageHeader } from "@/components/shared/page-header";
+import { StageBadge } from "@/components/shared/stage-badge";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { DEAL_STAGES, LEAD_STATUSES } from "@/lib/labels";
+import { formatCurrency, formatDate, formatRelativeDate } from "@/lib/utils";
 
 /**
- * Temporary scaffold page: proves the tokens, the font and the theme toggle.
- * Replaced by the marketing landing in M3.
+ * Design system showcase — the M2 validation screen. It is a development
+ * surface, not a product screen: M3 replaces `/` with the marketing landing.
  */
 
-const surfaceTokens = [
-  { name: "--bg", className: "bg-bg" },
-  { name: "--surface", className: "bg-surface" },
-  { name: "--border", className: "bg-border" },
-  { name: "--text", className: "bg-text" },
-  { name: "--muted", className: "bg-muted" },
+const rawTokens = [
+  { group: "Superfícies", items: ["--bg", "--surface", "--border", "--text", "--muted"] },
+  { group: "Marca", items: ["--primary", "--primary-hover", "--accent"] },
+  { group: "Funil", items: ["--won", "--lost", "--open", "--due"] },
 ];
 
-const brandTokens = [
-  { name: "--primary", className: "bg-primary" },
-  { name: "--primary-hover", className: "bg-primary-hover" },
-  { name: "--accent", className: "bg-accent" },
+const sampleDeals = [
+  { title: "Plataforma comercial — Lumina Tech", cents: 4_750_000, date: "2026-09-16" },
+  { title: "Plano anual — Clara Beleza", cents: 980_500, date: "2026-07-29" },
+  { title: "Pacote inicial — VetCasa", cents: 295_000, date: "2026-09-10" },
 ];
 
-const funnelTokens = [
-  { name: "--won", label: "Fechado Ganho", className: "bg-won" },
-  { name: "--lost", label: "Fechado Perdido", className: "bg-lost" },
-  { name: "--open", label: "Negócio aberto", className: "bg-open" },
-  { name: "--due", label: "Prazo próximo", className: "bg-due" },
-];
-
-export default function Home() {
+export default function DesignSystemPage() {
   return (
-    <main className="mx-auto max-w-3xl p-6">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">PipeFlow CRM</h1>
-          <p className="mt-1 text-sm text-muted">
-            Fundação do projeto: tokens, tipografia e tema. As telas começam no M3.
-          </p>
-        </div>
-        <ThemeToggle />
-      </header>
+    <main className="mx-auto max-w-4xl p-6 pb-16">
+      <PageHeader
+        title="Design system"
+        description="Tokens, badges e primitivos que alimentam as telas das próximas etapas."
+        action={
+          <Button asChild>
+            <Link href="/dashboard">Abrir o aplicativo</Link>
+          </Button>
+        }
+      />
 
-      <section className="mt-8">
-        <h2 className="text-lg font-semibold">Superfícies</h2>
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {surfaceTokens.map((token) => (
-            <Swatch key={token.name} name={token.name} className={token.className} />
-          ))}
-        </div>
-      </section>
+      <div className="mt-8 space-y-8">
+        {rawTokens.map((section) => (
+          <section key={section.group}>
+            <h2 className="text-lg font-semibold">{section.group}</h2>
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
+              {section.items.map((token) => (
+                <div
+                  key={token}
+                  className="rounded-lg border border-border bg-panel p-3 shadow-sm"
+                >
+                  <div
+                    className="h-10 rounded-md border border-border"
+                    style={{ backgroundColor: `var(${token})` }}
+                  />
+                  <p className="mt-2 text-xs text-muted-foreground">{token}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
 
-      <section className="mt-8">
-        <h2 className="text-lg font-semibold">Marca</h2>
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {brandTokens.map((token) => (
-            <Swatch key={token.name} name={token.name} className={token.className} />
-          ))}
-        </div>
-      </section>
-
-      <section className="mt-8">
-        <h2 className="text-lg font-semibold">Funil</h2>
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {funnelTokens.map((token) => (
-            <Swatch
-              key={token.name}
-              name={token.name}
-              label={token.label}
-              className={token.className}
-            />
-          ))}
-        </div>
-      </section>
-
-      <section className="mt-8">
-        <h2 className="text-lg font-semibold">Valores monetários</h2>
-        <table className="mt-3 w-full max-w-xs text-sm">
-          <tbody>
-            {["1.250,00", "980,50", "12.400,00"].map((value) => (
-              <tr key={value} className="border-b border-border">
-                <td className="h-11 text-muted">Negócio</td>
-                <td className="h-11 money text-right font-medium">R$ {value}</td>
-              </tr>
+        <section>
+          <h2 className="text-lg font-semibold">Etapas do negócio</h2>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {DEAL_STAGES.map((stage) => (
+              <StageBadge key={stage} stage={stage} />
             ))}
-          </tbody>
-        </table>
-      </section>
-    </main>
-  );
-}
+          </div>
+        </section>
 
-function Swatch({
-  name,
-  label,
-  className,
-}: {
-  name: string;
-  label?: string;
-  className: string;
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-surface p-4 shadow-sm">
-      <div className={`h-10 rounded-lg border border-border ${className}`} />
-      <p className="mt-2 text-xs text-muted">{name}</p>
-      {label ? <p className="text-xs font-medium">{label}</p> : null}
-    </div>
+        <section>
+          <h2 className="text-lg font-semibold">Status do lead</h2>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {LEAD_STATUSES.map((status) => (
+              <StatusBadge key={status} status={status} />
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold">Botões</h2>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Button>Ação primária</Button>
+            <Button variant="outline">Secundária</Button>
+            <Button variant="ghost">Discreta</Button>
+            <Button variant="destructive">Excluir</Button>
+            <Button size="sm" variant="outline">
+              Pequena
+            </Button>
+            <Button disabled>Desabilitada</Button>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold">Valores e datas</h2>
+          <Card className="mt-3">
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">
+                Negócios em aberto
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs uppercase tracking-wide">
+                      Negócio
+                    </TableHead>
+                    <TableHead className="text-xs uppercase tracking-wide">
+                      Prazo
+                    </TableHead>
+                    <TableHead className="text-right text-xs uppercase tracking-wide">
+                      Valor
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sampleDeals.map((deal) => (
+                    <TableRow key={deal.title}>
+                      <TableCell className="font-medium">{deal.title}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatDate(deal.date)}
+                        <span className="ml-2 text-xs">
+                          {formatRelativeDate(deal.date)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="money text-right font-medium">
+                        {formatCurrency(deal.cents)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold">Estado vazio</h2>
+          <EmptyState
+            className="mt-3"
+            icon={Inbox}
+            title="Nenhum negócio nesta etapa ainda."
+            description="Arraste um card para cá ou crie um negócio direto nesta coluna."
+            action={<Button size="sm">Novo negócio</Button>}
+          />
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold">Carregamento</h2>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <Skeleton className="h-20 rounded-lg" />
+            <Skeleton className="h-20 rounded-lg" />
+            <Skeleton className="h-20 rounded-lg" />
+          </div>
+        </section>
+      </div>
+    </main>
   );
 }

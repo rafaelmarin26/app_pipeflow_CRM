@@ -1,6 +1,9 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
-/* Dark mode is driven by a `dark` class on <html>, set by the theme toggle. */
+/* Dark mode is driven by a `dark` class on <html>. Dark is the default:
+   the server renders the class and the inline script in app/layout.tsx only
+   removes it when the visitor has explicitly stored "light". */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
@@ -26,6 +29,23 @@
   --lost: #dc2626;
   --open: #4f46e5;
   --due: #f59e0b;
+
+  /*
+   * Elevation. The two documented surfaces swap roles between themes: in light
+   * the page is the tinted one and panels are white; in dark the page is the
+   * darkest layer and panels sit above it. `--canvas` and `--panel` name the
+   * role instead of the shade, so a component says what it means.
+   */
+  --canvas: var(--surface);
+  --panel: var(--bg);
+
+  /* neutral surface for hover, secondary buttons and inert fills */
+  --subtle: #f1f5f9;
+
+  --popover: var(--panel);
+  --popover-foreground: var(--text);
+
+  --radius: 0.5rem;
 }
 
 .dark {
@@ -44,25 +64,67 @@
   --lost: #ef4444;
   --open: #6366f1;
   --due: #fbbf24;
+
+  --canvas: var(--bg);
+  --panel: var(--surface);
+
+  --subtle: #1e293b;
 }
 
-/* Expose the tokens as Tailwind utilities: bg-surface, text-muted, border-border, ... */
+/*
+ * Two vocabularies, one palette.
+ *
+ * The vendored shadcn components in components/ui speak their own token names
+ * (bg-background, bg-muted, bg-accent, ...). Rather than patch 15 files on every
+ * upgrade, their names are aliased onto the tokens above. Two names collide with
+ * CLAUDE.md §7 and shadcn's meaning wins, because the vendored components depend
+ * on it:
+ *
+ *   muted   shadcn: a low-contrast SURFACE. Our muted grey TEXT is `text-muted-foreground`.
+ *   accent  shadcn: the hover SURFACE. Our violet brand accent is `text-brand` / `bg-brand`.
+ *
+ * The CSS variables themselves keep the names and hexes CLAUDE.md documents.
+ */
 @theme inline {
+  /* shadcn vocabulary */
+  --color-background: var(--canvas);
+  --color-foreground: var(--text);
+  --color-card: var(--panel);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--panel);
+  --color-popover-foreground: var(--text);
   --color-primary: var(--primary);
-  --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
-  --color-accent: var(--accent);
+  --color-secondary: var(--subtle);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--subtle);
+  --color-muted-foreground: var(--muted);
+  --color-accent: var(--subtle);
+  --color-accent-foreground: var(--text);
+  --color-destructive: var(--lost);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--primary);
 
+  /* PipeFlow vocabulary */
+  --color-canvas: var(--canvas);
+  --color-panel: var(--panel);
   --color-bg: var(--bg);
   --color-surface: var(--surface);
-  --color-border: var(--border);
   --color-text: var(--text);
-  --color-muted: var(--muted);
+  --color-brand: var(--accent);
+  --color-primary-hover: var(--primary-hover);
 
+  /* funnel */
   --color-won: var(--won);
   --color-lost: var(--lost);
   --color-open: var(--open);
   --color-due: var(--due);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
@@ -74,6 +136,11 @@
 }
 
 @layer base {
+  /* Tailwind v4 defaults an unqualified `border` to currentColor. */
+  * {
+    @apply border-border;
+  }
+
   html {
     color-scheme: light;
   }
@@ -83,7 +150,7 @@
   }
 
   body {
-    background-color: var(--bg);
+    background-color: var(--canvas);
     color: var(--text);
     -webkit-font-smoothing: antialiased;
   }
