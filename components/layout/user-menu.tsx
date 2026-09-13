@@ -79,10 +79,12 @@ export function UserMenu({
 
         <DropdownMenuSeparator />
 
-        {/* Inert until M11 wires Supabase Auth. */}
-        <DropdownMenuItem disabled>
-          <LogOut className="size-4" aria-hidden />
-          Sair
+        {/* Navigation only: M11 turns this into the sign-out Server Action. */}
+        <DropdownMenuItem asChild>
+          <Link href="/login" onClick={onNavigate}>
+            <LogOut className="size-4" aria-hidden />
+            Sair
+          </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -43,19 +43,21 @@ Versões fixadas. Não trocar sem decisão explícita registrada aqui.
 app/
   (marketing)/              # público, sem auth
     page.tsx                #   landing: hero, features, pricing, CTA
-  (auth)/
+  (auth)/                   # layout centrado, fundo em gradiente
     login/  signup/         #   Supabase Auth
+    recuperar-senha/        #   pedido de link de redefinição
     callback/route.ts       #   troca do code por sessão
     convite/[token]/        #   aceite de convite
   (app)/                    # protegido por middleware
-    layout.tsx              #   sidebar + workspace switcher
-    dashboard/              #   métricas, funil, prazos próximos
-    leads/                  #   listagem + busca/filtros
-      [id]/                 #   detalhe + timeline de atividades
-    pipeline/               #   Kanban de negócios
-    settings/
-      workspace/  members/  billing/
-    onboarding/             #   criar primeiro workspace
+    (shell)/                #   rotas com sidebar + workspace switcher
+      layout.tsx
+      dashboard/            #     métricas, funil, prazos próximos
+      leads/                #     listagem + busca/filtros
+        [id]/               #       detalhe + timeline de atividades
+      pipeline/             #     Kanban de negócios
+      settings/
+        workspace/  members/  billing/
+    onboarding/             #   criar primeiro workspace — sem sidebar
   api/
     stripe/webhook/route.ts #   assinatura verificada, idempotente
 components/
@@ -84,6 +86,7 @@ middleware.ts               # refresh de sessão + guarda de rotas
 - **Mutações via Server Actions**, colocalizadas em `_actions.ts` dentro da rota que as usa. Route Handlers ficam reservados para webhooks e integrações externas.
 - **Toda Server Action começa com:** autenticar → resolver workspace ativo → validar input com zod → checar permissão → executar. Nessa ordem, sem pular etapas.
 - Busca de dados acontece no Server Component; o client recebe dados prontos via props.
+- **O grupo `(app)/(shell)/` carrega a sidebar**; o onboarding é irmão dele, não filho. A rota protegida que roda *antes* de existir workspace não pode herdar um layout cuja função é listar workspaces. O grupo não muda URL nenhuma, e a guarda do middleware continua valendo por caminho (`/onboarding` está sob `(app)`).
 
 ---
 
