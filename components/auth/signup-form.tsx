@@ -83,7 +83,6 @@ export function SignupForm() {
             hint: true,
           })}
           autoComplete="new-password"
-          placeholder="••••••••"
         />
       </Field>
 
