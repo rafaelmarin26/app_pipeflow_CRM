@@ -177,16 +177,32 @@ Submeter cada formulário vazio e ver as mensagens de erro em PT-BR; fluxo signu
 
 ### Entregas
 
-- [ ] Tabela de leads: nome, empresa, cargo, status, responsável, criado em
-- [ ] Busca por texto (nome, e-mail, empresa) com debounce, refletida na URL (`?q=`)
-- [ ] Filtros por status, responsável e período, também na URL
-- [ ] Estado vazio distinguindo "nenhum lead ainda" de "nenhum resultado para este filtro"
-- [ ] Dialog de novo lead com os 6 campos do PRD e validação zod
-- [ ] Edição pelo mesmo dialog, em modo de edição
-- [ ] `leads/[id]` — cabeçalho com dados de contato, ações e badge de status
-- [ ] Timeline de atividades: ícone por tipo, autor, descrição e data relativa, em ordem cronológica
-- [ ] Formulário de nova atividade com seletor dos 4 tipos
-- [ ] Negócios vinculados ao lead, listados no detalhe
+- [x] Tabela de leads: nome, empresa, cargo, status, responsável, criado em
+- [x] Busca por texto (nome, e-mail, empresa) com debounce, refletida na URL (`?q=`)
+- [x] Filtros por status, responsável e período, também na URL
+- [x] Estado vazio distinguindo "nenhum lead ainda" de "nenhum resultado para este filtro"
+- [x] Dialog de novo lead com os 6 campos do PRD e validação zod
+- [x] Edição pelo mesmo dialog, em modo de edição
+- [x] `leads/[id]` — cabeçalho com dados de contato, ações e badge de status
+- [x] Timeline de atividades: ícone por tipo, autor, descrição e data relativa, em ordem cronológica
+- [x] Formulário de nova atividade com seletor dos 4 tipos
+- [x] Negócios vinculados ao lead, listados no detalhe
+
+> **Desvios registrados.** (1) **As mutações não persistem.** Criar, editar e excluir lead e
+> registrar atividade validam, mostram o estado de carregamento e confirmam com toast, mas a
+> lista não muda — é o mesmo `lib/fake-submit.ts` do M5. Guardar os leads em estado local no
+> cliente tiraria a listagem do servidor e seria desfeito no M12, onde cada `onSubmit` vira uma
+> chamada de Server Action e nada mais no componente se move. (2) A timeline ordena do **mais
+> recente para o mais antigo**: a última interação é a que está sendo acompanhada. (3) O filtro
+> de período usa presets (7, 30 e 90 dias) em vez de um seletor de data — o `date picker` do
+> shadcn não está instalado e um intervalo livre não tem uso claro nesta tela. (4) O dialog tem
+> um sétimo campo além dos 6 do PRD: **responsável**, sem o qual o filtro por responsável não
+> teria como ser preenchido. (5) Dois componentes shadcn entraram na leva: `textarea` (descrição
+> da atividade) e `alert-dialog` (confirmação de exclusão). (6) `types/views.ts` passa a
+> concentrar as formas com join (`LeadWithOwner`, `DealWithOwner`, `ActivityWithAuthor`), que no
+> M12 saem do SQL com a mesma forma. (7) `notFound()` num lead inexistente renderiza a tela
+> certa mas responde **200**: o Next 15 já começou o streaming quando a chamada acontece.
+> Fica para a varredura do M17, junto com o `robots.txt` da área autenticada.
 
 ### Validação
 
