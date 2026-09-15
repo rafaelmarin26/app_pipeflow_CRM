@@ -72,6 +72,7 @@ lib/
   utils.ts                  # cn(), formatCurrency(), formatDate()
 types/
   database.ts               # gerado: supabase gen types typescript
+  views.ts                  # linhas com join (LeadWithOwner, ...) que as telas consomem
 supabase/
   migrations/               # SQL versionado, timestamp no nome
 docs/
