@@ -63,17 +63,31 @@
   --radius: 0.5rem;
 }
 
+/*
+ * The dark ramp is NEUTRAL, not slate.
+ *
+ * It used to be Tailwind's slate scale (#0B1120, #1E293B, #94A3B8), which carries
+ * a blue cast: on a large surface the whole application read as navy rather than
+ * as dark. These greys are chromatically flat, so the only colour on screen is
+ * the colour that means something — indigo for brand and open deals, green and
+ * red for the two outcomes, amber for a deadline. Against a neutral ground the
+ * indigo reads as a decision instead of as more of the background.
+ *
+ * Every text pair below was measured against its own background: body and muted
+ * text clear AA on both the canvas and the panel, and each `-ink` clears AA on a
+ * 10% tint of its own tone on both surfaces (CLAUDE.md §7).
+ */
 .dark {
   --primary: #6366f1;
   --primary-hover: #818cf8;
   --primary-foreground: #ffffff;
   --accent: #a78bfa;
 
-  --bg: #0b1120;
-  --surface: #111827;
-  --border: #1e293b;
-  --text: #f1f5f9;
-  --muted: #94a3b8;
+  --bg: #0c0c0e;
+  --surface: #151517;
+  --border: #2a2a2e;
+  --text: #ededef;
+  --muted: #9e9ea7;
 
   --won: #22c55e;
   --lost: #ef4444;
@@ -84,13 +98,13 @@
   --lost-ink: #fca5a5;
   --due-ink: #fcd34d;
   --brand-ink: #c4b5fd;
-  --muted-ink: #cbd5e1;
+  --muted-ink: #d4d4d8;
   --primary-ink: #a5b4fc;
 
   --canvas: var(--bg);
   --panel: var(--surface);
 
-  --subtle: #1e293b;
+  --subtle: #1f1f23;
 }
 
 /*
@@ -187,5 +201,92 @@
   *:focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;
+  }
+}
+
+/*
+ * Kanban board — PLAN.md M7.
+ *
+ * One orchestrated entrance and nothing else. The columns arrive left to right
+ * and the cards cascade briefly inside them, which reads as the board being
+ * dealt out; after that the surface is still. Nothing here loops, because this
+ * is a work surface and CLAUDE.md §7 asks the application to stay "densa e
+ * sóbria" — a card that keeps moving is a card that cannot be read.
+ *
+ * Only transform and opacity are animated, so the browser never has to lay the
+ * board out again mid-animation.
+ */
+@keyframes board-column-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes board-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/*
+ * The stagger is a custom property so the delay is data, not a class: the column
+ * sets `--stagger` from its index and the cards add their own offset on top.
+ * `both` keeps each element invisible during its own delay, which is what stops
+ * the board from flashing fully-formed before the cascade starts.
+ *
+ * Neither element carries a dnd-kit transform — that lives on the card *inside*
+ * the animated <li> — so the forwards half of `both` cannot fight the drag.
+ */
+@utility board-column-in {
+  animation: board-column-in 320ms ease-out both;
+  animation-delay: var(--stagger, 0ms);
+}
+
+@utility board-card-in {
+  animation: board-card-in 240ms ease-out both;
+  animation-delay: var(--stagger, 0ms);
+}
+
+/*
+ * Atmosphere behind the board: a barely-there indigo wash at the top, mixed from
+ * the brand token rather than a hex so it follows the theme. At 4% it sits under
+ * the columns without touching the contrast of anything written on them.
+ */
+@utility board-wash {
+  background-image: radial-gradient(
+    120% 60% at 50% 0%,
+    color-mix(in oklch, var(--primary) 4%, transparent) 0%,
+    transparent 70%
+  );
+  background-repeat: no-repeat;
+}
+
+/*
+ * Deliberately outside every cascade layer: unlayered rules outrank everything
+ * inside @layer utilities, so this switches off the entrance and the card lift
+ * without an !important on each one.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .board-column-in,
+  .board-card-in {
+    animation: none;
+  }
+
+  .deal-card {
+    transition: none;
+  }
+
+  .deal-card:hover {
+    transform: none;
   }
 }

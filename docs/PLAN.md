@@ -218,17 +218,41 @@ Buscar, filtrar, limpar filtros e recarregar a página mantendo o estado pela UR
 
 ### Entregas
 
-- [ ] Board com as 6 colunas do PRD, na ordem do enum `deal_stage`
-- [ ] Cabeçalho de coluna: rótulo PT-BR, contagem e soma em R$
-- [ ] Card de negócio: título, valor, lead vinculado, avatar do responsável e prazo
-- [ ] Prazo vencido ou próximo destacado com o token `--due`
-- [ ] Drag-and-drop com `@dnd-kit` entre colunas e reordenação dentro da coluna
-- [ ] `DragOverlay` com `shadow-md` e leve rotação durante o arraste
-- [ ] Navegação por teclado funcionando (requisito do `@dnd-kit`)
-- [ ] Scroll horizontal do board com colunas de largura fixa
-- [ ] Dialog de novo negócio: título, valor, lead, responsável, prazo e etapa
-- [ ] Coluna vazia com estado vazio discreto, ainda aceitando drop
-- [ ] Colunas Ganho e Perdido visualmente distintas das etapas abertas
+- [x] Board com as 6 colunas do PRD, na ordem do enum `deal_stage`
+- [x] Cabeçalho de coluna: rótulo PT-BR, contagem e soma em R$
+- [x] Card de negócio: título, valor, lead vinculado, avatar do responsável e prazo
+- [x] Prazo vencido ou próximo destacado com o token `--due`
+- [x] Drag-and-drop com `@dnd-kit` entre colunas e reordenação dentro da coluna
+- [x] `DragOverlay` com `shadow-md` e leve rotação durante o arraste
+- [x] Navegação por teclado funcionando (requisito do `@dnd-kit`)
+- [x] Scroll horizontal do board com colunas de largura fixa
+- [x] Dialog de novo negócio: título, valor, lead, responsável, prazo e etapa
+- [x] Coluna vazia com estado vazio discreto, ainda aceitando drop
+- [x] Colunas Ganho e Perdido visualmente distintas das etapas abertas
+
+> **Desvios registrados.** (1) **O arraste não persiste.** Soltar um card reordena o board em
+> memória e um reload devolve tudo ao lugar — é o mesmo compromisso do M6, e o M13 transforma o
+> `onDragEnd` numa Server Action. O mesmo vale para o dialog de negócio, que usa o
+> `lib/fake-submit.ts`. (2) **A lógica do board mora em `lib/pipeline.ts`**, sem React:
+> `groupDealsByStage`, `columnSummary`, `positionBetween`, `dueState` e `moveDealInBoard` são
+> funções puras. `moveDealInBoard` devolve o board seguinte **e** o novo `position`, que é
+> exatamente o que o `update` do M13 precisa gravar — a aritmética do rank não é reescrita no
+> servidor. Mesma ideia do `lib/metrics.ts` previsto para o M8. (3) **Prazo vencido usa o tom
+> `--lost`, não o `--due`.** Um prazo estourado é falha consumada, não aviso; o âmbar fica
+> reservado para o que ainda dá para salvar (vence nos próximos 7 dias). Negócio fechado não
+> exibe alerta de prazo nenhum: a data virou histórico e a coluna já carrega a própria cor.
+> (4) As quatro etapas abertas ficam agrupadas e um divisor as separa das duas fechadas, para o
+> board ser lido como "funil | desfecho". (5) **Anúncios do `@dnd-kit` traduzidos**: os padrões
+> da biblioteca são em inglês e quem depende deles é justamente quem não vê o card se mover.
+> (6) `types/views.ts` ganha `DealCardData` (deal + responsável + lead), a forma do join com dois
+> níveis que o M13 executa. (7) Entrada orquestrada das colunas e dos cards em `app/globals.css`,
+> com `--stagger` e um bloco `prefers-reduced-motion` que desliga animação e o realce de hover.
+> (8) **Duas entregas além do plano, vindas da referência ao Pipedrive:** um trilho no topo de
+> cada cabeçalho que *preenche* conforme o funil avança (um quarto em "Novo Lead", cheio em
+> "Negociação") em vez de dar uma cor por etapa como o Pipedrive faz — o CLAUDE.md §7 não permite
+> gastar verde e vermelho fora de ganho/perdido, então a progressão virou largura e não matiz; e
+> um `+` discreto em cada coluna, que abre o dialog já posicionado naquela etapa e mantém o único
+> botão indigo preenchido no cabeçalho da página.
 
 ### Validação
 
