@@ -10,6 +10,7 @@ import {
   useSensor,
   useSensors,
   type Announcements,
+  type ScreenReaderInstructions,
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
@@ -91,10 +92,22 @@ export function PipelineBoardView({
   const activeDeal = activeId ? findDeal(board, activeId) : null;
 
   /**
-   * dnd-kit announces in English out of the box. The application speaks PT-BR,
-   * and a screen reader user is exactly the person who depends on these strings
-   * being right (CLAUDE.md §6).
+   * dnd-kit ships every accessibility string in English. The application speaks
+   * PT-BR, and a screen reader user is exactly the person who depends on these
+   * being right (CLAUDE.md §6) — they are the whole interface for someone who
+   * cannot see the card move.
+   *
+   * These are the instructions read when a card first takes focus, before any
+   * drag has started.
    */
+  const screenReaderInstructions: ScreenReaderInstructions = {
+    draggable: `
+      Para pegar um negócio, pressione a barra de espaço.
+      Durante o arraste, use as setas para mover entre as etapas e as posições.
+      Pressione a barra de espaço novamente para soltar, ou Esc para cancelar.
+    `,
+  };
+
   function describeTarget(overId: string | null): string | null {
     if (!overId) return null;
     const stage = columnOf(board, overId);
@@ -180,7 +193,7 @@ export function PipelineBoardView({
     <DndContext
       sensors={sensors}
       collisionDetection={closestCorners}
-      accessibility={{ announcements }}
+      accessibility={{ announcements, screenReaderInstructions }}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
@@ -195,7 +208,7 @@ export function PipelineBoardView({
           growing the topbar or the page header cannot leave the board hanging
           off the bottom. Vertical overflow is clipped because each column does
           its own scrolling — the only scrollbar here is the horizontal one. */}
-      <div className="board-wash -mx-6 min-h-0 flex-1 overflow-x-auto overflow-y-hidden px-6">
+      <div className="-mx-6 min-h-0 flex-1 overflow-x-auto overflow-y-hidden px-6">
         <div className="flex h-full min-h-[24rem] items-stretch gap-4">
           {OPEN_STAGES.map((stage, index) => (
             <KanbanColumn
@@ -211,7 +224,7 @@ export function PipelineBoardView({
           ))}
 
           {/* Funnel on the left, outcomes on the right. */}
-          <div className="mx-2 w-px shrink-0 self-stretch bg-border/60" aria-hidden />
+          <div className="mx-2 w-px shrink-0 self-stretch bg-hairline" aria-hidden />
 
           {CLOSED_STAGES.map((stage, index) => (
             <KanbanColumn

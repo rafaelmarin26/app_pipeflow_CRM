@@ -5,40 +5,27 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { stageTone, type StageTone } from "@/lib/labels";
 import { dueState, type DueState } from "@/lib/pipeline";
+import { STAGE_TEXT } from "@/lib/stage-styles";
 import { cn, formatCurrency, formatDate, initials } from "@/lib/utils";
 import type { DealCardData } from "@/types/views";
 
 /**
- * A deal on the board — PLAN.md M7.
+ * A deal on the board — PLAN.md M7, restyled for Identidade Visual v2.
  *
- * Every colour on this card is derived, never chosen: the left accent comes from
- * `stageTone()` so a card can never disagree with the column it sits in, and the
- * deadline chip comes from `dueState()`. Nothing here decorates.
+ * The split v2 asks for: **accent means interaction, stage colour means
+ * information**. Chartreuse only ever appears because the user is pointing at
+ * something; the deal's own stage speaks through the value, in mono, in the
+ * colour of its column. Nothing on this card decorates.
  */
-
-/** 2px rule on the left edge, so the stage is readable without reading. */
-const toneAccent: Record<StageTone, string> = {
-  open: "bg-open",
-  won: "bg-won",
-  lost: "bg-lost",
-};
-
-/** Lift on hover, tinted by the same tone. The only flourish on this surface. */
-const toneHover: Record<StageTone, string> = {
-  open: "hover:-translate-y-0.5 hover:border-open/40 hover:shadow-md hover:shadow-open/15",
-  won: "hover:-translate-y-0.5 hover:border-won/40 hover:shadow-md hover:shadow-won/15",
-  lost: "hover:-translate-y-0.5 hover:border-lost/40 hover:shadow-md hover:shadow-lost/15",
-};
 
 /**
- * An overdue deal borrows the lost tone because a missed deadline is a failure
- * signal, not a warning. `--due` amber stays reserved for what is still ahead.
+ * An overdue deal borrows the negative red because a missed deadline is a
+ * failure, not a warning. Warm orange stays for what is still ahead.
  */
 const dueChip: Record<Exclude<DueState, "none">, string> = {
-  overdue: "bg-lost/10 text-lost-ink",
-  soon: "bg-due/10 text-due-ink",
+  overdue: "bg-negative/10 text-negative",
+  soon: "bg-warm/10 text-warm",
 };
 
 function DueLabel({ deal }: { deal: DealCardData }) {
@@ -48,21 +35,17 @@ function DueLabel({ deal }: { deal: DealCardData }) {
   const date = formatDate(deal.due_date);
 
   if (state === "none") {
-    return (
-      <span className="text-xs text-muted-foreground tabular-nums">
-        Prazo {date}
-      </span>
-    );
+    return <span className="label-mono text-faint">Prazo {date}</span>;
   }
 
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium tabular-nums",
+        "label-mono inline-flex items-center rounded-sm px-1.5 py-0.5",
         dueChip[state],
       )}
     >
-      {state === "overdue" ? "Venceu em" : "Vence em"} {date}
+      {state === "overdue" ? "Venceu" : "Vence"} {date}
     </span>
   );
 }
@@ -76,28 +59,35 @@ function DealCardBody({
   deal,
   className,
   style,
+  interactive = true,
 }: {
   deal: DealCardData;
   className?: string;
   style?: CSSProperties;
+  /** The overlay copy is never hovered, so it skips the hover affordances. */
+  interactive?: boolean;
 }) {
-  const tone = stageTone(deal.stage);
-
   return (
     <article
       style={style}
       className={cn(
-        "deal-card relative overflow-hidden rounded-lg border border-border bg-panel p-3 pl-4 shadow-sm",
+        "deal-card group relative overflow-hidden rounded-md border border-hairline bg-panel p-3",
+        interactive &&
+          "transition-colors duration-200 hover:border-brand/20 hover:bg-elevated",
         className,
       )}
     >
-      <span
-        className={cn("absolute inset-y-0 left-0 w-0.5", toneAccent[tone])}
-        aria-hidden
-      />
+      {/* The accent rule the brand guide puts on a hovered card: zero width at
+          rest, full width under the pointer. The one flourish on this surface. */}
+      {interactive ? (
+        <span
+          className="absolute inset-x-0 top-0 h-px w-0 bg-brand transition-all duration-300 group-hover:w-full"
+          aria-hidden
+        />
+      ) : null}
 
-      <div className="space-y-2">
-        <p className="line-clamp-2 text-sm font-medium text-foreground">
+      <div className="space-y-2.5">
+        <p className="line-clamp-2 text-sm leading-snug font-medium text-foreground">
           {deal.title}
         </p>
 
@@ -106,16 +96,18 @@ function DealCardBody({
         </p>
 
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-semibold text-foreground tabular-nums">
+          {/* Value carries the stage colour: the card's one piece of hard data,
+              in the voice reserved for data. */}
+          <span className={cn("money text-sm font-semibold", STAGE_TEXT[deal.stage])}>
             {formatCurrency(deal.value_cents)}
           </span>
 
           {deal.owner ? (
-            <Avatar className="size-6" title={deal.owner.name}>
+            <Avatar className="size-6 rounded-md" title={deal.owner.name}>
               {deal.owner.avatar_url ? (
                 <AvatarImage src={deal.owner.avatar_url} alt="" />
               ) : null}
-              <AvatarFallback className="text-[10px]">
+              <AvatarFallback className="rounded-md bg-elevated font-mono text-[10px] text-muted-foreground">
                 {initials(deal.owner.name)}
               </AvatarFallback>
             </Avatar>
@@ -154,8 +146,6 @@ export function DealCard({
     attributes: { roleDescription: "cartão de negócio" },
   });
 
-  const tone = stageTone(deal.stage);
-
   return (
     <li
       className="board-card-in"
@@ -172,11 +162,12 @@ export function DealCard({
       >
         <DealCardBody
           deal={deal}
+          interactive={!isDragging}
           className={cn(
-            "cursor-grab touch-none transition duration-200",
-            // The original stays in the flow to hold the slot open, but the copy
-            // in the DragOverlay is the one the user is looking at.
-            isDragging ? "opacity-0" : toneHover[tone],
+            "cursor-grab touch-none",
+            // The original stays in the flow to hold the slot open and fades to
+            // the opacity the brand guide specifies for a card in transit.
+            isDragging && "opacity-70",
           )}
         />
       </div>
@@ -189,9 +180,10 @@ export function DealCardPreview({ deal }: { deal: DealCardData }) {
   return (
     <DealCardBody
       deal={deal}
+      interactive={false}
       // The overlay wrapper is already sized to the card that was picked up, so
       // the copy only has to fill it.
-      className="w-full rotate-2 scale-105 cursor-grabbing shadow-md"
+      className="w-full rotate-1 cursor-grabbing border-brand/30 shadow-lg shadow-black/40"
     />
   );
 }

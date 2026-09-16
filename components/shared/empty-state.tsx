@@ -26,7 +26,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded-lg border border-dashed border-border text-center",
+        "flex flex-col items-center justify-center rounded-lg border border-dashed border-hairline text-center",
         compact ? "gap-1.5 p-4" : "gap-3 p-10",
         className,
       )}
@@ -44,8 +44,8 @@ export function EmptyState({
       <div className={compact ? "space-y-0.5" : "space-y-1"}>
         <p
           className={cn(
-            "font-medium text-foreground",
-            compact ? "text-xs" : "text-sm",
+            "text-foreground",
+            compact ? "label-mono" : "display-md text-base",
           )}
         >
           {title}

@@ -24,7 +24,7 @@ export function PageHeader({
       )}
     >
       <div className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+        <h1 className="display-lg text-3xl text-foreground">
           {title}
         </h1>
         {description ? (

@@ -1,19 +1,16 @@
-import { Badge } from "@/components/ui/badge";
-import { DEAL_STAGE_LABELS, stageTone, type StageTone } from "@/lib/labels";
+import { DEAL_STAGE_LABELS } from "@/lib/labels";
+import { STAGE_BG, STAGE_TEXT } from "@/lib/stage-styles";
 import { cn } from "@/lib/utils";
 import type { DealStage } from "@/types/database";
 
 /**
- * Colour is information here, not decoration (CLAUDE.md §7): green and red are
- * reserved for won and lost, everything still in play is indigo. The tone comes
- * from the enum, so a badge can never disagree with the column it sits in.
+ * Stage of a deal — CLAUDE.md §7, Identidade Visual v2.
+ *
+ * A dot plus a mono label rather than a pill: v2 reads badges as data, and the
+ * label voice of the product is small uppercase mono. The colour comes from the
+ * stage map, never from a value written here, so a badge can never disagree with
+ * the column the deal sits in.
  */
-const toneClasses: Record<StageTone, string> = {
-  open: "border-open/25 bg-open/10 text-open-ink",
-  won: "border-won/25 bg-won/10 text-won-ink",
-  lost: "border-lost/25 bg-lost/10 text-lost-ink",
-};
-
 export function StageBadge({
   stage,
   className,
@@ -22,11 +19,18 @@ export function StageBadge({
   className?: string;
 }) {
   return (
-    <Badge
-      variant="outline"
-      className={cn("font-medium", toneClasses[stageTone(stage)], className)}
+    <span
+      className={cn(
+        "label-mono inline-flex items-center gap-1.5 whitespace-nowrap",
+        STAGE_TEXT[stage],
+        className,
+      )}
     >
+      <span
+        className={cn("size-2 shrink-0 rounded-full", STAGE_BG[stage])}
+        aria-hidden
+      />
       {DEAL_STAGE_LABELS[stage]}
-    </Badge>
+    </span>
   );
 }

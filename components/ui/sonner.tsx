@@ -9,16 +9,12 @@ import {
 } from "lucide-react";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
-import { useTheme } from "@/lib/use-theme";
-
 const Toaster = ({ ...props }: ToasterProps) => {
   // Deviates from the shadcn default, which pulls the theme from next-themes.
-  // PipeFlow drives the theme with a `dark` class on <html> (lib/use-theme.ts).
-  const { theme } = useTheme();
-
+  // PipeFlow is dark only, so there is nothing to read — the value is a constant.
   return (
     <Sonner
-      theme={theme}
+      theme="dark"
       className="toaster group"
       icons={{
         success: <CircleCheckIcon className="size-4" />,

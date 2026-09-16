@@ -1,14 +1,35 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { DM_Sans, IBM_Plex_Mono, Syne } from "next/font/google";
 
 import { Toaster } from "@/components/ui/sonner";
 
 import "./globals.css";
 
-const inter = Inter({
+/**
+ * Three voices — CLAUDE.md §7.
+ *
+ * Syne has the opinions (headings, the product name), DM Sans carries the prose,
+ * and IBM Plex Mono states the facts: money, labels, metadata, anything the user
+ * reads as data rather than as a sentence.
+ */
+const syne = Syne({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-inter",
+  weight: ["600", "700", "800"],
+  variable: "--font-syne",
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-dm-sans",
+});
+
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600"],
+  variable: "--font-plex-mono",
 });
 
 export const metadata: Metadata = {
@@ -21,20 +42,10 @@ export const metadata: Metadata = {
 };
 
 /**
- * Dark is the default theme: <html> ships with the class and this script only
- * takes it off when the visitor has explicitly chosen light. Running before
- * hydration is what keeps the page from flashing the wrong palette.
+ * The application is dark only. There is no theme toggle and no pre-paint script
+ * any more: the `dark` class is static, kept because the vendored shadcn
+ * components carry `dark:` variants that have to keep resolving.
  */
-const themeScript = `
-(function () {
-  try {
-    if (localStorage.getItem("theme") === "light") {
-      document.documentElement.classList.remove("dark");
-    }
-  } catch (e) {}
-})();
-`;
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -43,12 +54,8 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${inter.variable} dark`}
-      suppressHydrationWarning
+      className={`${syne.variable} ${dmSans.variable} ${plexMono.variable} dark`}
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
       <body className="font-sans antialiased">
         {children}
         <Toaster position="bottom-right" />

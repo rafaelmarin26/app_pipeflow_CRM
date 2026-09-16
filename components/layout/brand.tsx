@@ -3,23 +3,24 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 /**
- * Product mark: three rising bars, the pipeline itself. Drawn inline rather than
- * imported so it inherits the indigo to violet gradient from the tokens.
+ * Product mark — CLAUDE.md §7.
+ *
+ * A chartreuse square with a "P" in it, and nothing else. v1 drew three rising
+ * bars in a gradient; v2 rules gradients out and asks for something direct
+ * enough to survive at 20px in a favicon, so the mark is a letter on a colour.
  */
 export function BrandMark({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "flex size-8 shrink-0 items-center justify-center rounded-lg bg-linear-to-br from-primary to-brand",
+        "flex size-8 shrink-0 items-center justify-center rounded-md bg-brand",
         className,
       )}
       aria-hidden
     >
-      <svg viewBox="0 0 24 24" className="size-4" fill="none">
-        <rect x="4" y="13" width="4" height="7" rx="1.5" fill="white" fillOpacity="0.65" />
-        <rect x="10" y="9" width="4" height="11" rx="1.5" fill="white" fillOpacity="0.85" />
-        <rect x="16" y="4" width="4" height="16" rx="1.5" fill="white" />
-      </svg>
+      <span className="font-display text-[1.05rem] leading-none font-extrabold text-brand-ink">
+        P
+      </span>
     </span>
   );
 }
@@ -35,13 +36,14 @@ export function Brand({
     <Link
       href={href}
       className={cn(
-        "flex items-center gap-2 rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+        "flex items-center gap-2.5 rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
         className,
       )}
     >
       <BrandMark />
-      <span className="text-base font-semibold tracking-tight text-foreground">
-        PipeFlow
+      <span className="font-display text-base leading-none tracking-tight">
+        <span className="font-semibold text-foreground">PipeFlow</span>{" "}
+        <span className="font-normal text-faint">CRM</span>
       </span>
     </Link>
   );

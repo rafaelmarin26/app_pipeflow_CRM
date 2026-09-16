@@ -6,75 +6,31 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-
 import { Plus } from "lucide-react";
 
 import { DealCard } from "@/components/pipeline/deal-card";
 import { DealDialog } from "@/components/pipeline/deal-dialog";
-import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
-import {
-  DEAL_STAGE_LABELS,
-  DEAL_STAGES,
-  isClosedStage,
-  stageTone,
-  type StageTone,
-} from "@/lib/labels";
+import { DEAL_STAGE_LABELS } from "@/lib/labels";
 import { columnSummary } from "@/lib/pipeline";
+import { STAGE_BG, STAGE_TEXT } from "@/lib/stage-styles";
 import { cn, formatCurrencyCompact } from "@/lib/utils";
 import type { DealStage, Lead } from "@/types/database";
 import type { DealCardData, Person } from "@/types/views";
 
 /**
- * One stage of the funnel — PLAN.md M7.
+ * One stage of the funnel — PLAN.md M7, restyled for Identidade Visual v2.
  *
  * The droppable is the column itself, not the list of cards, so an empty column
  * still accepts a drop: "Fechado Ganho" is exactly the column a deal has to be
  * able to reach on the day it is still empty.
+ *
+ * v2 drops the frosted header of v1 — the brand guide rules out glassmorphism,
+ * and the header never needed it: it is a flex sibling of the scroller, so it
+ * holds its place without a blur or a sticky offset. The drop target is marked
+ * in chartreuse rather than in the stage colour, because in v2 accent means
+ * "you are interacting with this" and stage colour means "this is what it is".
  */
-
-/** Won and Lost read as outcomes; the four open stages read as one funnel. */
-const toneHeader: Record<StageTone, string> = {
-  open: "border-border",
-  won: "border-won/25 bg-won/10 text-won-ink",
-  lost: "border-lost/25 bg-lost/10 text-lost-ink",
-};
-
-const toneDot: Record<StageTone, string> = {
-  open: "bg-open",
-  won: "bg-won",
-  lost: "bg-lost",
-};
-
-/** The drop target has to be unmistakable while a card hovers over it. */
-const toneOver: Record<StageTone, string> = {
-  open: "ring-2 ring-inset ring-open/40 bg-open/5",
-  won: "ring-2 ring-inset ring-won/40 bg-won/5",
-  lost: "ring-2 ring-inset ring-lost/40 bg-lost/5",
-};
-
-/**
- * The rail across the top of each header, borrowed from Pipedrive's board — but
- * carrying different information. Pipedrive gives every stage its own hue; here
- * every open stage is indigo (CLAUDE.md §7 reserves green and red for the two
- * outcomes) and the rail instead *fills* as the funnel advances: a quarter at
- * "Novo Lead", full at "Negociação". Progress without spending a colour on it.
- */
-const OPEN_STAGE_COUNT = DEAL_STAGES.filter(
-  (stage) => !isClosedStage(stage),
-).length;
-
-const toneRail: Record<StageTone, string> = {
-  open: "bg-open",
-  won: "bg-won",
-  lost: "bg-lost",
-};
-
-/** How much of the rail is filled — the depth of this stage in the funnel. */
-function railFill(stage: DealStage): number {
-  if (isClosedStage(stage)) return 1;
-  return (DEAL_STAGES.indexOf(stage) + 1) / OPEN_STAGE_COUNT;
-}
 
 /** Delay between two neighbouring cards in the entrance cascade. */
 const CARD_STAGGER_MS = 40;
@@ -107,7 +63,6 @@ export function KanbanColumn({
     data: { type: "column", stage },
   });
 
-  const tone = stageTone(stage);
   const { count, totalCents } = columnSummary(deals);
 
   // `isOver` only fires when the pointer is over the column's own padding; once
@@ -121,73 +76,53 @@ export function KanbanColumn({
   return (
     <section
       aria-label={DEAL_STAGE_LABELS[stage]}
-      className="board-column-in flex h-full w-[300px] shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-panel/60"
+      className={cn(
+        "board-column-in flex h-full w-[300px] shrink-0 flex-col overflow-hidden rounded-lg border bg-panel/40 transition-colors duration-150",
+        hovering ? "border-brand/50 bg-brand/[0.03]" : "border-hairline",
+      )}
       style={{ "--stagger": `${index * 60}ms` } as CSSProperties}
     >
-      {/* Outside the scroller on purpose: the header is a flex sibling of the
-          card list, so it holds its place while the cards scroll beneath it
-          without the browser having to recompute a sticky offset per frame. */}
-      <div
-        className={cn(
-          "shrink-0 border-b bg-panel/90 backdrop-blur",
-          toneHeader[tone],
-        )}
-      >
-        {/* Funnel depth, read at a glance across the six headers. */}
-        <div className="h-0.5 w-full bg-border/60" aria-hidden>
-          <div
-            className={cn("h-full", toneRail[tone])}
-            style={{ width: `${railFill(stage) * 100}%` }}
-          />
-        </div>
+      {/* The stage rail: the one place the column states its own colour at full
+          strength, so the six headers read as a spectrum across the board. */}
+      <div className={cn("h-0.5 w-full shrink-0", STAGE_BG[stage])} aria-hidden />
 
-        <div className="flex items-center gap-2 px-3 py-2.5">
-          <span
-            className={cn("size-2 shrink-0 rounded-full", toneDot[tone])}
-            aria-hidden
-          />
+      <div className="flex shrink-0 items-center gap-2 border-b border-hairline px-3 py-3">
+        <h2 className={cn("label-mono truncate", STAGE_TEXT[stage])}>
+          {DEAL_STAGE_LABELS[stage]}
+        </h2>
 
-          <h2 className="truncate text-sm font-semibold">
-            {DEAL_STAGE_LABELS[stage]}
-          </h2>
+        <span className="label-mono shrink-0 rounded-sm bg-elevated px-1.5 py-0.5 text-faint">
+          {count}
+        </span>
 
-          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground tabular-nums">
-            {count}
-          </span>
+        <span className="money ml-auto shrink-0 text-xs text-muted-foreground">
+          {formatCurrencyCompact(totalCents)}
+        </span>
 
-          <span className="ml-auto shrink-0 text-xs text-muted-foreground tabular-nums">
-            {formatCurrencyCompact(totalCents)}
-          </span>
-
-          {/* Creating a deal straight into the column you are looking at, the
-              way Pipedrive does it. Ghost and icon-only, so the single filled
-              indigo button of the page header stays the primary action
-              (CLAUDE.md §7). */}
-          <DealDialog
-            leads={leads}
-            owners={owners}
-            defaultOwnerId={defaultOwnerId}
-            defaultStage={stage}
-            trigger={
-              <Button
-                variant="ghost"
-                size="icon"
-                className="-mr-1 size-6 shrink-0 text-muted-foreground hover:text-foreground"
-                aria-label={`Novo negócio em ${DEAL_STAGE_LABELS[stage]}`}
-              >
-                <Plus aria-hidden />
-              </Button>
-            }
-          />
-        </div>
+        {/* Creating a deal straight into the column you are looking at. Ghost and
+            icon-only, so the single filled chartreuse button of the page header
+            stays the primary action (CLAUDE.md §7). */}
+        <DealDialog
+          leads={leads}
+          owners={owners}
+          defaultOwnerId={defaultOwnerId}
+          defaultStage={stage}
+          trigger={
+            <Button
+              variant="ghost"
+              size="icon"
+              className="-mr-1 size-6 shrink-0 text-faint hover:text-brand"
+              aria-label={`Novo negócio em ${DEAL_STAGE_LABELS[stage]}`}
+            >
+              <Plus aria-hidden />
+            </Button>
+          }
+        />
       </div>
 
       <div
         ref={setNodeRef}
-        className={cn(
-          "min-h-0 flex-1 overflow-y-auto p-2 transition-colors duration-150",
-          hovering ? toneOver[tone] : null,
-        )}
+        className="min-h-0 flex-1 overflow-y-auto p-2"
       >
         <SortableContext
           items={deals.map((deal) => deal.id)}
@@ -206,7 +141,11 @@ export function KanbanColumn({
               ))}
             </ul>
           ) : (
-            <EmptyState compact title="Nenhum negócio nesta etapa." />
+            // Still a valid drop target with nothing in it — the whole column is
+            // the droppable, not this block.
+            <p className="label-mono px-2 py-6 text-center text-faint">
+              Nenhum negócio nesta etapa
+            </p>
           )}
         </SortableContext>
       </div>
