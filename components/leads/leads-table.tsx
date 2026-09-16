@@ -33,26 +33,26 @@ export function LeadsTable({
   owners: Person[];
 }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-panel">
+    <div className="overflow-hidden rounded-lg border border-hairline bg-panel">
       <Table>
         <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead className="text-xs tracking-wide uppercase">
+          <TableRow className="border-hairline hover:bg-transparent">
+            <TableHead className="label-mono text-faint">
               Lead
             </TableHead>
-            <TableHead className="hidden text-xs tracking-wide uppercase md:table-cell">
+            <TableHead className="label-mono hidden text-faint md:table-cell">
               Empresa
             </TableHead>
-            <TableHead className="text-xs tracking-wide uppercase">
+            <TableHead className="label-mono text-faint">
               Status
             </TableHead>
-            <TableHead className="hidden text-xs tracking-wide uppercase lg:table-cell">
+            <TableHead className="label-mono hidden text-faint lg:table-cell">
               Responsável
             </TableHead>
-            <TableHead className="hidden text-xs tracking-wide uppercase sm:table-cell">
+            <TableHead className="label-mono hidden text-faint sm:table-cell">
               Criado em
             </TableHead>
-            <TableHead className="w-[88px] text-right text-xs tracking-wide uppercase">
+            <TableHead className="label-mono w-[88px] text-right text-faint">
               <span className="sr-only">Ações</span>
             </TableHead>
           </TableRow>
@@ -60,7 +60,10 @@ export function LeadsTable({
 
         <TableBody>
           {leads.map((lead) => (
-            <TableRow key={lead.id} className="h-11">
+            <TableRow
+              key={lead.id}
+              className="h-11 border-hairline transition-colors hover:bg-elevated"
+            >
               <TableCell className="py-2">
                 <Link
                   href={`/leads/${lead.id}`}
@@ -95,11 +98,11 @@ export function LeadsTable({
               <TableCell className="hidden py-2 lg:table-cell">
                 {lead.owner ? (
                   <div className="flex items-center gap-2">
-                    <Avatar className="size-6 shrink-0">
+                    <Avatar className="size-6 shrink-0 rounded-md">
                       {lead.owner.avatar_url ? (
                         <AvatarImage src={lead.owner.avatar_url} alt="" />
                       ) : null}
-                      <AvatarFallback className="text-[10px]">
+                      <AvatarFallback className="bg-elevated font-mono text-[10px] text-muted-foreground">
                         {initials(lead.owner.name)}
                       </AvatarFallback>
                     </Avatar>
@@ -114,8 +117,10 @@ export function LeadsTable({
                 )}
               </TableCell>
 
-              <TableCell className="hidden py-2 text-sm text-muted-foreground tabular-nums sm:table-cell">
-                {formatDate(lead.created_at)}
+              <TableCell className="hidden py-2 sm:table-cell">
+                <span className="money text-xs text-faint">
+                  {formatDate(lead.created_at)}
+                </span>
               </TableCell>
 
               <TableCell className="py-2">

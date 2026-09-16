@@ -1,5 +1,4 @@
 import { Brand } from "@/components/layout/brand";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { cn } from "@/lib/utils";
 
 /**
@@ -14,10 +13,6 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
     <div className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-4 py-12">
       <AuthBackdrop />
 
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
-      </div>
-
       <div className="w-full max-w-md">
         <Brand href="/" className="mx-auto w-fit" />
         {children}
@@ -26,12 +21,31 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** The indigo to violet wash of CLAUDE.md §7, kept faint enough to read over. */
+/**
+ * A modular grid, not a glow — CLAUDE.md §7.
+ *
+ * v1 put a blurred indigo orb behind these screens; v2 rules that out along with
+ * the rest of the neon vocabulary. The structure the brand leans on instead is
+ * the grid itself, drawn in hairlines and faded out at the edges so it reads as
+ * paper stock rather than as a background image.
+ */
 function AuthBackdrop() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-      <div className="absolute inset-0 bg-linear-to-br from-primary/8 via-canvas to-brand/8" />
-      <div className="absolute -top-40 left-1/2 size-[34rem] -translate-x-1/2 rounded-full bg-linear-to-br from-primary/25 to-brand/25 blur-3xl" />
+      <div
+        className="absolute inset-0 opacity-70"
+        style={{
+          backgroundImage:
+            "linear-gradient(var(--border-subtle) 1px, transparent 1px), linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px)",
+          backgroundSize: "56px 56px",
+          maskImage:
+            "radial-gradient(70% 55% at 50% 40%, #000 0%, transparent 100%)",
+          WebkitMaskImage:
+            "radial-gradient(70% 55% at 50% 40%, #000 0%, transparent 100%)",
+        }}
+      />
+      {/* One accent hairline across the top — the single flourish allowed. */}
+      <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand/40 to-transparent" />
     </div>
   );
 }
@@ -57,7 +71,7 @@ export function AuthCard({
           className,
         )}
       >
-        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="display-md text-xl">{title}</h1>
         {description ? (
           <p className="mt-1.5 text-sm text-muted-foreground">{description}</p>
         ) : null}

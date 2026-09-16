@@ -207,90 +207,144 @@ NEXT_PUBLIC_APP_URL                # http://localhost:3000 em dev
 
 ## 7. Identidade visual
 
+**Versão 2 — "Editorial Brutalist × Fintech".** Substitui integralmente a identidade indigo/Inter
+da v1. A direção é deliberadamente editorial: contenção acima de espetáculo, dados como interface,
+tipografia com opinião, grid modular, textura em vez de brilho.
+
+### A aplicação é só escura
+
+Não há tema claro nem alternador. O `<html>` carrega a classe `dark` de forma estática — mantida
+apenas porque os componentes shadcn vendorizados trazem variantes `dark:` que precisam continuar
+resolvendo. O produto tem um visual, e é este.
+
 ### Paleta
 
-```css
---primary:       #4F46E5;  /* indigo-600 — ações, links, marca */
---primary-hover: #4338CA;
---accent:        #8B5CF6;  /* violet-500 — gradiente da landing, destaques */
+**Acento — uma cor só, com convicção.**
 
---bg:      #FFFFFF;  --bg-dark:      #0C0C0E;
---surface: #F8FAFC;  --surface-dark: #151517;
---border:  #E2E8F0;  --border-dark:  #2A2A2E;
---text:    #0F172A;  --text-dark:    #EDEDEF;
---muted:   #64748B;  --muted-dark:   #9E9EA7;
+```css
+--accent:       #CAFF33;  /* chartreuse ácido — CTAs, item ativo, marca, badge Pro */
+--accent-ink:   #0C0C0E;  /* o que fica SOBRE o acento: quase-preto, nunca branco */
+--accent-hover: #D9FF5C;
 ```
 
-**O ramp escuro é neutro, não *slate*.** Os cinzas do tema escuro não têm matiz: em superfície
-grande, um cinza azulado (a escala `slate` do Tailwind, `#0B1120`/`#1E293B`) faz a aplicação
-inteira ler como azul-marinho em vez de escuro. Com o fundo neutro, a única cor na tela é a cor
-que significa alguma coisa — indigo de marca e negócio aberto, verde e vermelho de desfecho,
-âmbar de prazo. O tema claro permanece na escala `slate`, onde o leve azul não compete com nada.
+**Superfícies e texto.**
 
-**Cores semânticas do funil** — usadas em badges, colunas do Kanban e barras do gráfico:
+```css
+--bg:            #0C0C0E;  /* fundo da página        */  --text:           #E8E8E8;
+--surface:       #141416;  /* cards, sidebar, painéis */  --text-secondary: #8A8A8F;
+--surface-2:     #1A1A1E;  /* hover, destaque        */  --text-muted:     #83838B;
+--border:        #2A2A2E;  /* bordas visíveis        */
+--border-subtle: #1E1E22;  /* divisores internos     */
+```
 
-| Significado | Cor |
-|---|---|
-| Fechado Ganho | `#16A34A` |
-| Fechado Perdido | `#DC2626` |
-| Negócio aberto | `#4F46E5` |
-| Prazo próximo / atenção | `#F59E0B` |
+> **Desvio medido do guia v2.** O guia define `text-muted` como `#555559`, que mede **2,48:1**
+> sobre `--surface` — bem abaixo dos 4,5:1 de AA, e é justamente o token dos labels mono de
+> 10–11px, o texto mais difícil da tela. Subiu para `#83838B` (4,8:1), o valor mais escuro que
+> passa mantendo o terceiro degrau abaixo do secundário.
 
-Verde e vermelho são **exclusivos** de ganho/perdido. Não usar como cor decorativa em outro lugar — no Kanban, cor é informação. A única exceção é `--lost`, reaproveitado como cor de ação destrutiva (`variant="destructive"`), onde o vermelho é convenção de interface e não classificação de funil.
+**Etapas do pipeline — uma cor por etapa.** Frio no topo do funil, esquentando até o fecho:
 
-**Cada cor semântica tem um par: o tom e a tinta.** O tom cheio (`--won`) é para preenchimento, barra de gráfico e borda. A tinta (`--won-ink`) é para **texto** sobre um fundo de 10–20% do mesmo tom. Os dois existem porque o tom cheio sobre a própria tinta falha o contraste AA: `#16A34A` sobre `bg-won/10` no tema claro dá 2,96:1, bem abaixo dos 4,5:1 exigidos para texto pequeno — e badge é `text-xs`.
+| Etapa (`deal_stage`) | Token | Hex |
+|---|---|---|
+| `new` — Novo Lead | `--stage-new` | `#5B7FFF` |
+| `contacted` — Contato Realizado | `--stage-contacted` | `#00B4D8` |
+| `proposal` — Proposta Enviada | `--stage-proposal` | `#CAFF33` |
+| `negotiation` — Negociação | `--stage-negotiation` | `#FF6B35` |
+| `won` — Fechado Ganho | `--stage-won` | `#2ED573` |
+| `lost` — Fechado Perdido | `--stage-lost` | `#FF4757` |
 
-| Uso | Classe |
-|---|---|
-| Preenchimento, barra, borda | `bg-won` · `border-won/25` |
-| Texto sobre o tom a 10–20% | `text-won-ink` |
+Isso **substitui a regra da v1** de três tons, em que toda etapa aberta era indigo e só ganho e
+perdido tinham cor própria. Os mapas de classe vivem em `lib/stage-styles.ts` — badge, cabeçalho
+de coluna e card leem de lá, para que uma etapa laranja no board não seja âmbar no detalhe do lead.
 
-Existem tintas para `won`, `lost`, `open`, `due`, `brand`, `muted` e `primary`, nas duas variantes de tema. **Nunca usar o tom cheio como cor de texto** — todos os pares foram medidos e passam AA (≥ 4,5:1) nos dois temas.
+**Semânticas, fora do funil:** `--positive #2ED573` · `--negative #FF4757` · `--warm #FF6B35`
+(urgência) · `--cool #5B7FFF` (informativo).
+
+**A regra que organiza o uso de cor:** **acento significa interação, cor de etapa significa
+informação.** O chartreuse só aparece porque o usuário está apontando para algo — hover, foco,
+item ativo, alvo de drop. A cor da etapa diz o que a coisa é. As duas nunca trocam de papel.
+
+**Não há mais escala `-ink`.** Na v1 o tom cheio falhava AA sobre o próprio tinte e cada cor
+precisava de um par. Nesta paleta as seis etapas e as semânticas passam AA como texto sobre
+`--surface` **e** sobre um tinte de 10% de si mesmas, medidas. Os nomes `--won-ink`, `--open-ink`
+etc. sobrevivem em `globals.css` apenas como aliases apontando para o próprio tom, para as telas
+da v1 continuarem compilando enquanto migram.
 
 ### Dois vocabulários, uma paleta
 
-Os componentes shadcn vendorizados em `components/ui/` falam o vocabulário próprio deles (`bg-background`, `bg-muted`, `bg-accent`). Em vez de editar 15 arquivos a cada atualização, `app/globals.css` mapeia esses nomes sobre os tokens acima. Dois nomes colidem, e nesses **o significado do shadcn prevalece**, porque os componentes dependem dele:
+Os componentes shadcn em `components/ui/` falam o vocabulário próprio deles. `app/globals.css`
+mapeia esses nomes sobre os tokens acima em vez de editar 15 arquivos a cada atualização. Onde os
+dois colidem, **o significado do shadcn prevalece**:
 
-| Utilitário | Significado | Token do CLAUDE.md |
+| Utilitário | Significado | Token |
 |---|---|---|
-| `bg-muted` | superfície de baixo contraste | `--subtle` |
-| `text-muted-foreground` | **texto apagado** | `--muted` (#64748B) |
-| `bg-accent` | superfície de hover | `--subtle` |
-| `bg-brand` / `text-brand` | **violeta da marca** | `--accent` (#8B5CF6) |
-
-As variáveis CSS mantêm os nomes e os hexes desta seção; só os utilitários Tailwind mudam de nome. Na prática: texto secundário é `text-muted-foreground`, e o violeta da marca é `bg-brand`.
-
-Além disso, `--canvas` e `--panel` nomeiam o **papel** em vez do tom, porque as duas superfícies trocam de posição entre os temas: no claro a página é a tonalizada (`--surface`) e os painéis são brancos (`--bg`); no escuro a página é a camada mais baixa (`--bg`) e os painéis ficam acima (`--surface`).
+| `bg-muted` | superfície de baixo contraste | `--surface-2` |
+| `text-muted-foreground` | **texto secundário** | `--text-secondary` |
+| `bg-accent` | superfície de hover | `--surface-2` |
+| `bg-brand` / `text-brand` | **chartreuse da marca** | `--accent` |
+| `text-faint` | texto terciário (labels, metadata) | `--text-muted` |
+| `bg-elevated` | hover, card destacado | `--surface-2` |
+| `border-hairline` | divisor interno | `--border-subtle` |
+| `bg-primary` | botão primário | `--accent` |
 
 ### Tipografia
 
-- **Inter**, carregada via `next/font/google` (`subsets: ['latin']`, `display: 'swap'`).
-- Números de valor monetário com `font-variant-numeric: tabular-nums` — colunas de R$ precisam alinhar.
-- Escala: `text-3xl/bold` título de página · `text-lg/semibold` seção · `text-sm` corpo da aplicação · `text-xs` metadados e timestamps.
-- A landing pode subir a escala (`text-5xl`+); a aplicação permanece densa e sóbria.
+Três vozes, carregadas por `next/font/google`:
+
+| Voz | Fonte | Uso |
+|---|---|---|
+| Display | **Syne** 600/700/800 | títulos, nome do produto, métricas grandes. Tracking negativo |
+| Corpo | **DM Sans** | prosa, labels de UI, botões. `line-height: 1.65` |
+| Dados | **IBM Plex Mono** 400/500/600 | dinheiro, labels, tags, metadata, timestamps |
+
+Utilitários que codificam essas vozes, em `globals.css`:
+
+- `money` — mono + `tabular-nums`. **Todo valor em R$ usa.** Colunas de dinheiro precisam alinhar.
+- `label-mono` — mono 11px, `uppercase`, `letter-spacing: 0.15em`. A voz de label do produto:
+  cabeçalho de coluna, cabeçalho de tabela, badge, metadata.
+- `display-xl` / `display-lg` / `display-md` — Syne com o tracking negativo de cada patamar.
+
+Escala: `text-3xl` + `display-lg` título de página · `text-lg` seção · `text-sm` corpo ·
+`label-mono` metadados.
 
 ### Forma e espaço
 
-- Raio: `0.5rem` (`rounded-lg`) em cards e inputs; `9999px` em badges.
-- Sombras discretas: `shadow-sm` em repouso, `shadow-md` em card arrastado. Nada de sombra pesada.
-- Espaçamento em múltiplos de 4px. Padding de card: `p-4`; da página: `p-6`.
-- Densidade de tabela: linhas de 44px, cabeçalho `text-xs uppercase tracking-wide text-muted-foreground`.
-- Dark mode via classe `dark` no `<html>`, com os tokens acima — nunca hardcode de hex no componente.
-- **O tema escuro é o padrão.** O servidor já renderiza `<html class="dark">`; um script inline remove a classe antes da primeira pintura quando o visitante escolheu claro explicitamente. A preferência do sistema operacional não é consultada — o produto tem um visual padrão e o usuário pode trocar.
+- Raio: **nunca acima de 12px**. `rounded-lg` (8px) em painéis e colunas, `rounded-md` (6px) em
+  cards e inputs, `rounded-sm` em chips. Badge não é pílula na v2 — é ponto colorido + label mono.
+- Espaçamento em múltiplos de 4px. Padding de card `p-3`/`p-4`; de página `p-6`.
+- Densidade de tabela: linhas de 44px, cabeçalho em `label-mono`, **sem zebra** (genérico demais),
+  hover em `bg-elevated`.
+- **Textura, não brilho.** Um grão de ruído SVG fixo a 3,5% de opacidade sobre a página inteira dá
+  dente ao fundo quase-preto. É onde a v2 gasta o orçamento de efeito.
+
+### Efeitos proibidos
+
+Glassmorphism (`backdrop-filter: blur`), gradient text, partículas em canvas, neon glow e
+`text-shadow`, órbitas flutuantes, raio acima de 12px, e mais de uma cor de acento competindo.
+Se um elemento precisa de brilho para se destacar, ele está no lugar errado da hierarquia.
 
 ### Princípios de interface
 
-1. **O Kanban é o herói.** É a tela que vende o produto; ganha o melhor espaço, a melhor animação e o maior cuidado.
-2. **Uma ação primária por tela.** Um único botão indigo preenchido; o resto é `ghost` ou `outline`.
-3. **Estado vazio nunca é uma tela em branco.** Todo empty state traz uma frase explicando e um botão para a primeira ação.
-4. **Feedback imediato.** Arrastar um card atualiza a UI na hora (otimista) e reverte com toast se o banco recusar.
-5. **Anti-padrão HubSpot:** se uma tela precisa de tutorial, ela precisa de corte.
+1. **O Kanban é o herói.** É a tela que vende o produto; ganha o melhor espaço e o maior cuidado.
+2. **Uma ação primária por tela.** Um único botão chartreuse preenchido; o resto é `ghost` ou
+   `outline`.
+3. **Estado vazio nunca é uma tela em branco.** Toda frase explica e oferece a primeira ação.
+4. **Feedback imediato.** Arrastar um card atualiza a UI na hora e reverte com toast se o banco
+   recusar.
+5. **Contenção acima de espetáculo.** Um acento bem posicionado vale mais que dez efeitos.
+6. **Anti-padrão HubSpot:** se uma tela precisa de tutorial, ela precisa de corte.
+
+### Movimento
+
+Uma entrada orquestrada por tela e nada mais: `fade + slideUp` de 16px com stagger incremental,
+disparado por Intersection Observer ou por `animation-delay`. Barra de acento crescendo de 0 a
+100% no hover de um card. **Nada em loop** — a aplicação é superfície de trabalho. Só `transform`
+e `opacity`, e tudo desligado sob `prefers-reduced-motion`.
 
 ### Tom de voz
 
-PT-BR direto e profissional, sem jargão corporativo e sem infantilização. "Nenhum negócio nesta etapa ainda." — não "Ops! Parece que está tudo vazio por aqui 😅". Valores sempre formatados como `R$ 1.250,00`.
-
----
+PT-BR direto e profissional, sem jargão corporativo e sem infantilização. "Nenhum negócio nesta
+etapa ainda." — não "Ops! Parece que está tudo vazio por aqui 😅". Valores sempre como `R$ 1.250,00`.
 
 ## 8. Milestones
 

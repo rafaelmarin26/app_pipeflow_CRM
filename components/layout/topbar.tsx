@@ -10,7 +10,6 @@ import {
   SidebarContent,
   type SidebarContentProps,
 } from "@/components/layout/sidebar-content";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -68,25 +67,16 @@ export function Topbar(props: SidebarContentProps) {
       <Brand className="md:hidden" />
 
       {/* Breadcrumb replaces the brand on desktop, where the sidebar carries it. */}
-      <div className="hidden min-w-0 items-center gap-1.5 text-sm md:flex">
+      <div className="label-mono hidden min-w-0 items-center gap-1.5 md:flex">
         {workspace ? (
           <>
-            <span className="truncate text-muted-foreground">
-              {workspace.name}
-            </span>
-            <ChevronRight
-              className="size-3.5 shrink-0 text-muted-foreground"
-              aria-hidden
-            />
+            <span className="truncate text-faint">{workspace.name}</span>
+            <ChevronRight className="size-3 shrink-0 text-faint" aria-hidden />
           </>
         ) : null}
-        <span className="truncate font-medium text-foreground">
+        <span className="truncate text-foreground">
           {section?.label ?? "PipeFlow"}
         </span>
-      </div>
-
-      <div className="ml-auto flex items-center gap-1">
-        <ThemeToggle />
       </div>
     </header>
   );

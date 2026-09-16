@@ -1,125 +1,110 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Dark mode is driven by a `dark` class on <html>. Dark is the default:
-   the server renders the class and the inline script in app/layout.tsx only
-   removes it when the visitor has explicitly stored "light". */
+/*
+ * The application is dark only — Identidade Visual v2.
+ *
+ * The `dark` class still ships on <html> because the vendored shadcn components
+ * carry `dark:` variants of their own; with the class always present those
+ * resolve, and there is no second palette for them to disagree with. The theme
+ * toggle and the inline pre-paint script are gone: the product has one look.
+ */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
  * Design tokens — CLAUDE.md §7.
- * Components never hardcode a hex value; they consume these tokens.
+ *
+ * One accent, with conviction. Chartreuse is the only brand colour; everything
+ * else on screen is either a neutral or one of the six pipeline stages, and a
+ * stage colour never appears outside the funnel. Components consume these
+ * tokens and never write a hex.
  */
 :root {
-  /* brand */
-  --primary: #4f46e5;
-  --primary-hover: #4338ca;
-  --primary-foreground: #ffffff;
-  --accent: #8b5cf6;
+  /* accent — CTAs, active states, the Pro badge, the logo mark */
+  --accent: #caff33;
+  /* what sits ON the accent: near-black, never white */
+  --accent-ink: #0c0c0e;
+  --accent-hover: #d9ff5c;
 
-  /* surfaces */
-  --bg: #ffffff;
-  --surface: #f8fafc;
-  --border: #e2e8f0;
-  --text: #0f172a;
-  --muted: #64748b;
-
-  /* funnel semantics — color is information, never decoration */
-  --won: #16a34a;
-  --lost: #dc2626;
-  --open: #4f46e5;
-  --due: #f59e0b;
-
-  /*
-   * Ink pairs. The full tone above is for fills, bars and borders; the ink is
-   * the readable text version of it, for labels sitting on a 10-20% tint of the
-   * same colour. Measured against WCAG AA for small text (4.5:1) in both themes
-   * — the full tone fails that test on its own tint, which is why the pair
-   * exists at all.
-   */
-  --won-ink: #166534;
-  --lost-ink: #b91c1c;
-  --due-ink: #92400e;
-  --brand-ink: #6d28d9;
-  --muted-ink: #475569;
-  --primary-ink: #4338ca;
-  --open-ink: var(--primary-ink);
-
-  /*
-   * Elevation. The two documented surfaces swap roles between themes: in light
-   * the page is the tinted one and panels are white; in dark the page is the
-   * darkest layer and panels sit above it. `--canvas` and `--panel` name the
-   * role instead of the shade, so a component says what it means.
-   */
-  --canvas: var(--surface);
-  --panel: var(--bg);
-
-  /* neutral surface for hover, secondary buttons and inert fills */
-  --subtle: #f1f5f9;
-
-  --popover: var(--panel);
-  --popover-foreground: var(--text);
-
-  --radius: 0.5rem;
-}
-
-/*
- * The dark ramp is NEUTRAL, not slate.
- *
- * It used to be Tailwind's slate scale (#0B1120, #1E293B, #94A3B8), which carries
- * a blue cast: on a large surface the whole application read as navy rather than
- * as dark. These greys are chromatically flat, so the only colour on screen is
- * the colour that means something — indigo for brand and open deals, green and
- * red for the two outcomes, amber for a deadline. Against a neutral ground the
- * indigo reads as a decision instead of as more of the background.
- *
- * Every text pair below was measured against its own background: body and muted
- * text clear AA on both the canvas and the panel, and each `-ink` clears AA on a
- * 10% tint of its own tone on both surfaces (CLAUDE.md §7).
- */
-.dark {
-  --primary: #6366f1;
-  --primary-hover: #818cf8;
-  --primary-foreground: #ffffff;
-  --accent: #a78bfa;
-
+  /* surfaces, darkest to lightest */
   --bg: #0c0c0e;
-  --surface: #151517;
+  --surface: #141416;
+  --surface-2: #1a1a1e;
   --border: #2a2a2e;
-  --text: #ededef;
-  --muted: #9e9ea7;
+  --border-subtle: #1e1e22;
 
-  --won: #22c55e;
-  --lost: #ef4444;
-  --open: #6366f1;
-  --due: #fbbf24;
+  /*
+   * Text. The brand guide sets the third step at #555559, which measures 2.48:1
+   * on `--surface` — well under the 4.5:1 AA needs, and it is specified for the
+   * 10-11px uppercase mono labels, the hardest thing on screen to read. Lifted
+   * to the lightest value that clears AA while still reading as a third step
+   * below the secondary grey.
+   */
+  --text: #e8e8e8;
+  --text-secondary: #8a8a8f;
+  --text-muted: #83838b;
 
-  --won-ink: #4ade80;
-  --lost-ink: #fca5a5;
-  --due-ink: #fcd34d;
-  --brand-ink: #c4b5fd;
-  --muted-ink: #d4d4d8;
-  --primary-ink: #a5b4fc;
+  /*
+   * Pipeline stages. In v2 colour maps one-to-one onto `deal_stage`: six stages,
+   * six hues, cool at the top of the funnel warming toward the close. This
+   * replaces the three-tone scheme of v1, where every open stage was indigo.
+   * Each of these clears AA as text on `--surface` and on a 10% tint of itself,
+   * which is why v2 has no separate "ink" scale.
+   */
+  --stage-new: #5b7fff;
+  --stage-contacted: #00b4d8;
+  --stage-proposal: #caff33;
+  --stage-negotiation: #ff6b35;
+  --stage-won: #2ed573;
+  --stage-lost: #ff4757;
 
+  /* semantics, outside the funnel */
+  --positive: #2ed573;
+  --negative: #ff4757;
+  --warm: #ff6b35;
+  --cool: #5b7fff;
+
+  /*
+   * Bridge for the v1 names still spelled across the screens. They are aliases,
+   * not a second palette: `--due` is the warm orange of urgency, `--open` the
+   * cool blue of a deal still in play. Every `-ink` now points at its own full
+   * tone, because in this palette the tone itself is readable on its 10% tint —
+   * the pair existed in v1 only to work around contrast that is no longer a
+   * problem.
+   */
+  --won: var(--positive);
+  --lost: var(--negative);
+  --open: var(--cool);
+  --due: var(--warm);
+  --won-ink: var(--positive);
+  --lost-ink: var(--negative);
+  --open-ink: var(--cool);
+  --due-ink: var(--warm);
+  --brand-ink: var(--accent);
+  --primary-ink: var(--accent);
+  --muted-ink: var(--text-secondary);
+
+  /* Role names: the page vs. the things sitting on it. */
   --canvas: var(--bg);
   --panel: var(--surface);
+  --subtle: var(--surface-2);
 
-  --subtle: #1f1f23;
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+
+  /* Brutalidade controlada: nothing rounder than 12px. */
+  --radius: 0.5rem;
 }
 
 /*
  * Two vocabularies, one palette.
  *
- * The vendored shadcn components in components/ui speak their own token names
- * (bg-background, bg-muted, bg-accent, ...). Rather than patch 15 files on every
- * upgrade, their names are aliased onto the tokens above. Two names collide with
- * CLAUDE.md §7 and shadcn's meaning wins, because the vendored components depend
- * on it:
+ * The vendored shadcn components speak their own token names. Rather than patch
+ * them on every upgrade, those names are aliased onto the tokens above. Where
+ * the two collide, shadcn's meaning wins because its components depend on it:
  *
- *   muted   shadcn: a low-contrast SURFACE. Our muted grey TEXT is `text-muted-foreground`.
- *   accent  shadcn: the hover SURFACE. Our violet brand accent is `text-brand` / `bg-brand`.
- *
- * The CSS variables themselves keep the names and hexes CLAUDE.md documents.
+ *   muted   shadcn: a low-contrast SURFACE. Our grey TEXT is `text-muted-foreground`.
+ *   accent  shadcn: the hover SURFACE. Our chartreuse is `bg-brand` / `text-brand`.
  */
 @theme inline {
   /* shadcn vocabulary */
@@ -127,31 +112,45 @@
   --color-foreground: var(--text);
   --color-card: var(--panel);
   --color-card-foreground: var(--text);
-  --color-popover: var(--panel);
-  --color-popover-foreground: var(--text);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--subtle);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--accent-ink);
+  --color-secondary: var(--surface-2);
   --color-secondary-foreground: var(--text);
-  --color-muted: var(--subtle);
-  --color-muted-foreground: var(--muted);
-  --color-accent: var(--subtle);
+  --color-muted: var(--surface-2);
+  --color-muted-foreground: var(--text-secondary);
+  --color-accent: var(--surface-2);
   --color-accent-foreground: var(--text);
-  --color-destructive: var(--lost);
+  --color-destructive: var(--negative);
   --color-border: var(--border);
   --color-input: var(--border);
-  --color-ring: var(--primary);
+  --color-ring: var(--accent);
 
   /* PipeFlow vocabulary */
   --color-canvas: var(--canvas);
   --color-panel: var(--panel);
-  --color-bg: var(--bg);
-  --color-surface: var(--surface);
+  --color-elevated: var(--surface-2);
+  --color-hairline: var(--border-subtle);
   --color-text: var(--text);
+  --color-faint: var(--text-muted);
   --color-brand: var(--accent);
-  --color-primary-hover: var(--primary-hover);
+  --color-brand-ink: var(--accent-ink);
+  --color-primary-hover: var(--accent-hover);
 
-  /* funnel: full tone for fills, ink for text on a tint of that tone */
+  /* the six stages */
+  --color-stage-new: var(--stage-new);
+  --color-stage-contacted: var(--stage-contacted);
+  --color-stage-proposal: var(--stage-proposal);
+  --color-stage-negotiation: var(--stage-negotiation);
+  --color-stage-won: var(--stage-won);
+  --color-stage-lost: var(--stage-lost);
+
+  /* semantics + the v1 aliases the screens still spell */
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-warm: var(--warm);
+  --color-cool: var(--cool);
   --color-won: var(--won);
   --color-lost: var(--lost);
   --color-open: var(--open);
@@ -160,7 +159,6 @@
   --color-lost-ink: var(--lost-ink);
   --color-open-ink: var(--open-ink);
   --color-due-ink: var(--due-ink);
-  --color-brand-ink: var(--brand-ink);
   --color-muted-ink: var(--muted-ink);
   --color-primary-ink: var(--primary-ink);
 
@@ -169,52 +167,66 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  /* Three voices: Syne has the opinions, DM Sans carries the prose,
+     IBM Plex Mono states the facts. */
+  --font-display: var(--font-syne), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 }
 
-/* Monetary values: R$ columns have to line up. */
+/*
+ * Money and any other figure that has to line up: mono, tabular, always.
+ * In v2 numbers are data, and data speaks IBM Plex Mono.
+ */
 @utility money {
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
 }
 
-@layer base {
-  /* Tailwind v4 defaults an unqualified `border` to currentColor. */
-  * {
-    @apply border-border;
-  }
+/*
+ * The label voice of the product: small, uppercase, widely tracked mono. Column
+ * headers, table headers, metadata, badges. Used often enough to be a utility
+ * rather than five classes repeated everywhere.
+ */
+@utility label-mono {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
 
-  html {
-    color-scheme: light;
-  }
+/*
+ * Display headings carry negative tracking — Syne is geometric enough that at
+ * large sizes the default spacing reads loose.
+ */
+@utility display-xl {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
 
-  html.dark {
-    color-scheme: dark;
-  }
+@utility display-lg {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
 
-  body {
-    background-color: var(--canvas);
-    color: var(--text);
-    -webkit-font-smoothing: antialiased;
-  }
-
-  *:focus-visible {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
-  }
+@utility display-md {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 /*
  * Kanban board — PLAN.md M7.
  *
  * One orchestrated entrance and nothing else. The columns arrive left to right
- * and the cards cascade briefly inside them, which reads as the board being
- * dealt out; after that the surface is still. Nothing here loops, because this
- * is a work surface and CLAUDE.md §7 asks the application to stay "densa e
- * sóbria" — a card that keeps moving is a card that cannot be read.
- *
- * Only transform and opacity are animated, so the browser never has to lay the
- * board out again mid-animation.
+ * and the cards cascade briefly inside them; after that the surface is still.
+ * Nothing loops, because this is a work surface — a card that keeps moving is a
+ * card that cannot be read. Only transform and opacity are animated.
  */
 @keyframes board-column-in {
   from {
@@ -243,9 +255,6 @@
  * sets `--stagger` from its index and the cards add their own offset on top.
  * `both` keeps each element invisible during its own delay, which is what stops
  * the board from flashing fully-formed before the cascade starts.
- *
- * Neither element carries a dnd-kit transform — that lives on the card *inside*
- * the animated <li> — so the forwards half of `both` cannot fight the drag.
  */
 @utility board-column-in {
   animation: board-column-in 320ms ease-out both;
@@ -257,24 +266,55 @@
   animation-delay: var(--stagger, 0ms);
 }
 
-/*
- * Atmosphere behind the board: a barely-there indigo wash at the top, mixed from
- * the brand token rather than a hex so it follows the theme. At 4% it sits under
- * the columns without touching the contrast of anything written on them.
- */
-@utility board-wash {
-  background-image: radial-gradient(
-    120% 60% at 50% 0%,
-    color-mix(in oklch, var(--primary) 4%, transparent) 0%,
-    transparent 70%
-  );
-  background-repeat: no-repeat;
+@layer base {
+  /* Tailwind v4 defaults an unqualified `border` to currentColor. */
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--canvas);
+    color: var(--text);
+    font-family: var(--font-sans);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /*
+   * Noise, not glow. A fixed grain over the whole page gives the near-black
+   * ground some tooth, which is what keeps a flat dark UI from looking like an
+   * unlit screen. v2 spends its texture budget here instead of on blur.
+   */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 }
 
 /*
  * Deliberately outside every cascade layer: unlayered rules outrank everything
- * inside @layer utilities, so this switches off the entrance and the card lift
- * without an !important on each one.
+ * inside @layer utilities, so this switches off motion without an !important on
+ * each rule.
  */
 @media (prefers-reduced-motion: reduce) {
   .board-column-in,

@@ -52,17 +52,17 @@ Componentes recebem dados **via props**, nunca importam o mock diretamente. Só 
 - [x] `git init` e primeiro commit; `.gitignore` cobrindo `.env*.local`, `node_modules`, `.next`
 - [x] Scaffold Next.js 15 com App Router, TypeScript `strict`, ESLint e alias `@/*`
 - [x] Tailwind CSS 4 configurado
-- [x] Tokens da paleta indigo como CSS variables em `app/globals.css`, nas duas variantes (claro e escuro)
+- [x] Tokens da paleta como CSS variables em `app/globals.css` ~~nas duas variantes (claro e escuro)~~ — **só escuro desde a v2 da identidade**
 - [x] Cores semânticas do funil registradas como tokens (`--won`, `--lost`, `--open`, `--due`)
-- [x] Fonte Inter via `next/font/google`, com `tabular-nums` utilitário para valores monetários
-- [x] Dark mode por classe, com toggle funcionando
+- [x] ~~Fonte Inter~~ **Syne + DM Sans + IBM Plex Mono** via `next/font/google`, com utilitário `money` (mono + `tabular-nums`) para valores monetários
+- [x] Dark mode por classe ~~com toggle funcionando~~ — **o alternador foi removido na v2: a aplicação é só escura**
 - [x] Estrutura de pastas do CLAUDE.md §3 criada (route groups vazios, `lib/`, `types/`, `components/`)
 - [x] `.env.example` versionado com as 8 chaves da seção 6, todas vazias
 - [x] `README.md` curto: o que é, como rodar, link para PRD e CLAUDE.md
 
 ### Validação
 
-`npm run dev` sobe sem erro · `npm run build` passa · alternar o tema troca as cores da página.
+`npm run dev` sobe sem erro · `npm run build` passa.
 
 **Commit final:** `chore: scaffold next 15 project with tailwind and design tokens`
 
@@ -128,14 +128,14 @@ Percorrer a página em mobile e desktop sem quebra de layout; todos os CTAs apon
 - [x] `app/(app)/layout.tsx` — grid sidebar + conteúdo, com scroll independente
 - [x] Sidebar: logo, navegação (Dashboard, Leads, Pipeline, Configurações) com estado ativo
 - [x] Workspace switcher no topo da sidebar — dropdown listando os workspaces do mock
-- [x] Barra superior: gatilho do menu mobile, trilha `workspace › seção` e alternador de tema
+- [x] Barra superior: gatilho do menu mobile e trilha `workspace › seção` ~~e alternador de tema~~
 - [x] Menu do usuário no rodapé da sidebar: avatar, nome, papel, e-mail, sair
 - [x] Drawer mobile (`sheet`) substituindo a sidebar abaixo de `md`, com o mesmo componente de conteúdo
 - [x] Páginas placeholder das 4 rotas, cada uma com `PageHeader`
 - [x] `loading.tsx` com skeleton e `error.tsx` em `(app)`
 - [x] `not-found.tsx` da aplicação
 
-> **Desvio registrado.** O plano original punha o alternador de tema dentro do menu do usuário. Ele foi para a barra superior — controle de um clique, sem duplicata — e a barra superior, pedida depois do plano original, entrou como entrega própria.
+> **Desvio registrado.** A barra superior, pedida depois do plano original, entrou como entrega própria. O alternador de tema passou pelo menu do usuário, foi para a barra superior e acabou **removido** na v2 da identidade visual, que define a aplicação como só escura.
 
 ### Validação
 
@@ -157,7 +157,7 @@ Navegar entre as 4 rotas mantendo a sidebar montada; item ativo correto; drawer 
 - [x] Estados de erro por campo e estado de carregamento no botão
 - [x] `onboarding` — passo único: nomear o primeiro workspace, com slug derivado automaticamente
 - [ ] `convite/[token]` — tela de aceite: nome do workspace, quem convidou, papel oferecido
-- [x] Layout `(auth)` centrado, com a marca e fundo em gradiente indigo→violeta
+- [x] Layout `(auth)` centrado, com a marca e ~~fundo em gradiente indigo→violeta~~ **fundo de grid modular** (a v2 proíbe glow e gradiente decorativo)
 
 > **Desvios registrados.** (1) `recuperar-senha/` entrou como tela própria: o login exige o link de recuperação e um link morto é pior que uma tela a mais. Ela valida o e-mail e mostra a confirmação de envio; o envio real é do M11. (2) As rotas com sidebar foram para o grupo `app/(app)/(shell)/` para que o onboarding, que roda antes de existir qualquer workspace, não herde a sidebar que existe para listá-los — registrado em CLAUDE.md §3. Nenhuma URL mudou. (3) A navegação é falsa por ora: os formulários validam os campos, aguardam uma latência simulada (`lib/fake-submit.ts`) e redirecionam — login → `/dashboard`, signup → `/onboarding`, onboarding → `/dashboard`. Nenhuma credencial é verificada. (4) A tela de convite fica pendente para fechar o milestone.
 
@@ -523,6 +523,30 @@ Fluxo completo executado em produção com uma conta nova, incluindo um pagament
 **Commit final:** `chore: production hardening and deploy configuration`
 
 ---
+
+---
+
+## Identidade Visual v2 — aplicada fora da numeração de milestones
+
+Depois do M7 o produto trocou de identidade visual por inteiro: de indigo/Inter para a direção
+**"Editorial Brutalist × Fintech"** (chartreuse `#CAFF33`, Syne + DM Sans + IBM Plex Mono, só
+escuro, uma cor por etapa do pipeline). A especificação vive em [../CLAUDE.md](../CLAUDE.md) §7,
+reescrita na mesma leva.
+
+Não virou milestone próprio porque não entrega funcionalidade — é uma troca de camada visual sobre
+o que já existia. O que ela alterou, para quem for ler o histórico:
+
+- **M1** — tokens, fontes e a remoção do tema claro e do alternador (entregas riscadas acima).
+- **M2** — `stage-badge` e `status-badge` viraram ponto colorido + label mono; `lib/stage-styles.ts`
+  nasceu como fonte única das seis cores de etapa.
+- **M4** — marca nova (quadrado chartreuse com "P"), item ativo da sidebar em chartreuse,
+  alternador de tema fora da barra superior.
+- **M5** — fundo das telas de acesso virou grid modular em vez do gradiente com blur.
+- **M6** — cabeçalho da tabela de leads em `label-mono`, sem zebra, hover em `bg-elevated`.
+- **M7** — cabeçalho de coluna sem glassmorphism, trilho na cor da etapa, valor do card na cor da
+  etapa, hover e alvo de drop em chartreuse.
+
+Os milestones seguintes (M3 landing, M8 dashboard, M9 settings) nascem já na v2.
 
 ## Dependências entre milestones
 

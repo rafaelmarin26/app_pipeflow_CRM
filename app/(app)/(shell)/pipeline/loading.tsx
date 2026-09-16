@@ -23,21 +23,22 @@ export default function PipelineLoading() {
               {/* Same divider the board draws between funnel and outcome. */}
               {index === 4 ? (
                 <div
-                  className="mx-2 w-px shrink-0 self-stretch bg-border/60"
+                  className="mx-2 w-px shrink-0 self-stretch bg-hairline"
                   aria-hidden
                 />
               ) : null}
 
-              <div className="flex h-full w-[300px] shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-panel/60">
-                <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
-                  <Skeleton className="size-2 rounded-full" />
-                  <Skeleton className="h-4 w-28" />
+              <div className="flex h-full w-[300px] shrink-0 flex-col overflow-hidden rounded-lg border border-hairline bg-panel/40">
+                <Skeleton className="h-0.5 w-full rounded-none" />
+
+                <div className="flex items-center gap-2 border-b border-hairline px-3 py-3">
+                  <Skeleton className="h-3 w-24" />
                   <Skeleton className="ml-auto h-3 w-14" />
                 </div>
 
                 <div className="flex flex-col gap-2 p-2">
                   {Array.from({ length: cards }).map((_, card) => (
-                    <Skeleton key={card} className="h-28 rounded-lg" />
+                    <Skeleton key={card} className="h-28 rounded-md" />
                   ))}
                 </div>
               </div>
