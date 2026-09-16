@@ -214,12 +214,18 @@ NEXT_PUBLIC_APP_URL                # http://localhost:3000 em dev
 --primary-hover: #4338CA;
 --accent:        #8B5CF6;  /* violet-500 — gradiente da landing, destaques */
 
---bg:      #FFFFFF;  --bg-dark:      #0B1120;
---surface: #F8FAFC;  --surface-dark: #111827;
---border:  #E2E8F0;  --border-dark:  #1E293B;
---text:    #0F172A;  --text-dark:    #F1F5F9;
---muted:   #64748B;
+--bg:      #FFFFFF;  --bg-dark:      #0C0C0E;
+--surface: #F8FAFC;  --surface-dark: #151517;
+--border:  #E2E8F0;  --border-dark:  #2A2A2E;
+--text:    #0F172A;  --text-dark:    #EDEDEF;
+--muted:   #64748B;  --muted-dark:   #9E9EA7;
 ```
+
+**O ramp escuro é neutro, não *slate*.** Os cinzas do tema escuro não têm matiz: em superfície
+grande, um cinza azulado (a escala `slate` do Tailwind, `#0B1120`/`#1E293B`) faz a aplicação
+inteira ler como azul-marinho em vez de escuro. Com o fundo neutro, a única cor na tela é a cor
+que significa alguma coisa — indigo de marca e negócio aberto, verde e vermelho de desfecho,
+âmbar de prazo. O tema claro permanece na escala `slate`, onde o leve azul não compete com nada.
 
 **Cores semânticas do funil** — usadas em badges, colunas do Kanban e barras do gráfico:
 

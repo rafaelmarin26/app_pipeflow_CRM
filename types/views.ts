@@ -22,3 +22,14 @@ export type LeadWithOwner = Lead & { owner: Person | null };
 export type DealWithOwner = Deal & { owner: Person | null };
 
 export type ActivityWithAuthor = Activity & { author: Person | null };
+
+/**
+ * A deal as the Kanban card renders it: the row plus both of its joins.
+ *
+ * This is the shape of `select *, owner:owner_id (...), lead:lead_id (...)` that
+ * M13 runs against the `deals` table — only the columns the card actually shows
+ * are picked from the lead, so the board never ships a payload it does not paint.
+ */
+export type DealCardData = DealWithOwner & {
+  lead: Pick<Lead, "id" | "name" | "company"> | null;
+};
