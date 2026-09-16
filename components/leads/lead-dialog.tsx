@@ -65,7 +65,12 @@ export function LeadDialog({
       company: lead?.company ?? "",
       job_title: lead?.job_title ?? "",
       status: lead?.status ?? "new",
-      owner_id: lead?.owner_id ?? defaultOwnerId ?? owners[0]?.id ?? "",
+      // Editing never inherits the fallback: a lead whose owner is null has to
+      // show an empty select and make the user choose, not quietly hand itself
+      // to whoever opened the dialog.
+      owner_id: lead
+        ? (lead.owner_id ?? "")
+        : (defaultOwnerId ?? owners[0]?.id ?? ""),
     };
   }
 
