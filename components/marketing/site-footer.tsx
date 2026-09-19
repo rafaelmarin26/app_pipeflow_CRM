@@ -23,13 +23,15 @@ export function SiteFooter() {
           </p>
         </div>
 
-        <nav aria-label="Rodapé" className="flex flex-col gap-3">
+        {/* The vertical padding is the tap target, not decoration: the text
+            alone is a 20px line box, under the 24px floor a finger needs. */}
+        <nav aria-label="Rodapé" className="flex flex-col gap-2">
           {FOOTER_LINKS.map((link) =>
             link.href.startsWith("#") ? (
               <a
                 key={link.href}
                 href={link.href}
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                className="py-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 {link.label}
               </a>
@@ -37,7 +39,7 @@ export function SiteFooter() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                className="py-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 {link.label}
               </Link>
