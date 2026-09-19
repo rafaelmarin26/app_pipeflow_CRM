@@ -268,13 +268,25 @@ Arrastar um card entre todas as colunas; mover com teclado; totais por coluna re
 
 ### Entregas
 
-- [ ] 4 cards de métrica: total de leads, negócios abertos, valor total do pipeline, taxa de conversão
-- [ ] Gráfico de funil em Recharts, com as 6 etapas e as cores semânticas
-- [ ] Tooltip do gráfico com contagem e valor formatado
-- [ ] Lista "Seus negócios com prazo próximo" — do usuário logado, ordenada por prazo
-- [ ] Cálculo das métricas isolado em `lib/metrics.ts`, recebendo arrays e devolvendo números — pronto para reuso com dados reais
-- [ ] Skeletons de carregamento para cards e gráfico
-- [ ] Estado vazio do dashboard para workspace recém-criado
+- [x] 4 cards de métrica: total de leads, negócios abertos, valor total do pipeline, taxa de conversão
+- [x] Gráfico de funil em Recharts, com as 6 etapas e as cores semânticas
+- [x] Tooltip do gráfico com contagem e valor formatado
+- [x] Lista "Seus negócios com prazo próximo" — do usuário logado, ordenada por prazo
+- [x] Cálculo das métricas isolado em `lib/metrics.ts`, recebendo arrays e devolvendo números — pronto para reuso com dados reais
+- [x] Skeletons de carregamento para cards e gráfico
+- [x] Estado vazio do dashboard para workspace recém-criado
+
+> **Decisão de desenho registrada no M8.** O funil é desenhado como barras horizontais
+> — quatro etapas abertas em cima, os dois desfechos embaixo, separados pela mesma
+> hairline que o board usa antes das colunas fechadas — e não como o `FunnelChart` de
+> trapézios do Recharts. O trapézio pressupõe que cada etapa é um estreitamento da
+> anterior, e `won`/`lost` não são: são dois desfechos da quarta etapa. Os dois gráficos
+> compartilham o domínio do eixo para que as barras continuem comparáveis.
+
+> **Fixtures atualizadas na mesma leva.** Os `mockDeals` passaram de 15 para 25 negócios
+> (6-5-4-3 abertos, 4 ganhos, 3 perdidos) porque um funil 3-3-3-2-2-2 não tem forma de
+> funil, e os prazos dos negócios abertos foram reancorados na data corrente — todos já
+> haviam vencido, o que pintava de vermelho tanto a lista de prazos quanto o board.
 
 ### Validação
 
