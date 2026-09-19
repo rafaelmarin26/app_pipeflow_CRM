@@ -102,14 +102,30 @@ Uma página de teste renderiza todos os badges com as cores corretas, um empty s
 
 ### Entregas
 
-- [ ] Rota `app/(marketing)/page.tsx` com layout próprio (header público + footer)
-- [ ] **Hero:** headline, subheadline, CTA primário e prova visual do Kanban
-- [ ] **Funcionalidades:** grid com os 5 pilares — Kanban, leads, atividades, dashboard, multi-empresa
-- [ ] **Planos:** dois cards — Free (2 colaboradores, 50 leads) e Pro (R$ 49/mês, ilimitado), com destaque no Pro
-- [ ] **CTA final** e footer com links
-- [ ] Header com navegação âncora e botões Entrar / Criar conta
-- [ ] Responsivo de 360px a desktop
-- [ ] Metadata: title, description e Open Graph
+- [x] Rota `app/(marketing)/page.tsx` com layout próprio (header público + footer)
+- [x] **Hero:** headline, subheadline, dois CTAs e prova visual do Kanban
+- [x] **Números de resultado:** faixa com quatro métricas acima das funcionalidades
+- [x] **Funcionalidades:** grid com os 6 pilares — Kanban, leads, atividades, dashboard, multi-empresa e convites
+- [x] **Planos:** dois cards — Grátis (2 membros, 50 leads) e Pro (R$ 49,00/mês, ilimitado), com destaque no Pro
+- [x] **CTA final** e footer com logo e links
+- [x] Header com navegação âncora, link Entrar e botão Começar grátis
+- [x] Responsivo de 360px a desktop
+- [x] Metadata: title, description e Open Graph
+
+> **Escopo ampliado no pedido.** O plano original pedia 5 pilares e não previa a faixa de
+> números; o pedido de implementação trouxe 6 funcionalidades e quatro métricas de resultado.
+> O PRD foi atualizado na mesma leva.
+
+> **`app/page.tsx` removido.** A rota `/` era ocupada pela tela de showcase do design system do
+> M2, que o próprio arquivo declarava provisória — e que já referenciava tokens da v1
+> (`--primary`, `--won`, `--open`, `--due`) aposentados desde a troca de identidade. Ela e a
+> landing não podem coexistir: as duas resolvem para `/`.
+
+> **`lib/stripe/plans.ts` nasceu aqui.** Preço, período e os dois tetos do Grátis passam a viver
+> num arquivo só, que o M9 (tela de plano) e o M16 (checagem de limite na Server Action) leem.
+> Um preço exibido numa página pública e um preço efetivamente cobrado têm que sair da mesma
+> constante. Na mesma leva, `PLAN_LABELS.free` passou de "Free" para "Grátis", para o produto
+> inteiro chamar o plano pelo mesmo nome.
 
 ### Validação
 
