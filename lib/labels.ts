@@ -42,7 +42,7 @@ export const MEMBER_ROLE_LABELS: Record<MemberRole, string> = {
 };
 
 export const PLAN_LABELS: Record<Plan, string> = {
-  free: "Free",
+  free: "Grátis",
   pro: "Pro",
 };
 

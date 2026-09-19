@@ -360,3 +360,42 @@
     animation: none;
   }
 }
+
+/*
+ * Landing page — PLAN.md M3.
+ *
+ * Sections below the fold start hidden and are revealed by an Intersection
+ * Observer (the trigger CLAUDE.md §7 names, alongside a plain animation-delay).
+ * The hiding lives here rather than in a Tailwind class because two readers have
+ * to be able to override it:
+ *
+ *   - a browser with scripting off, via the <noscript> rule in the marketing
+ *     layout — no observer will ever fire there, and a public page that renders
+ *     invisible to a crawler or a reader without JavaScript is a broken page;
+ *   - a reader who asked for no motion, below, since `panel-in` resolves to
+ *     `animation: none` for them and an animation that never runs is an
+ *     animation that never restores the opacity it was going to fade in.
+ */
+[data-reveal] {
+  opacity: 0;
+}
+
+[data-reveal].panel-in {
+  opacity: 1;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  [data-reveal] {
+    opacity: 1;
+  }
+}

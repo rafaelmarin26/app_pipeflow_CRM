@@ -82,8 +82,14 @@ Landing page de apresentação do produto
 
 ### Landing Page
 
-- Página pública de apresentação do PipeFlow CRM
-- Seções: Hero, Funcionalidades, Planos e preços, CTA
+- Página pública de apresentação do PipeFlow CRM, servida em `/`
+- Header fixo: logo, navegação âncora, link de acesso e botão "Começar grátis"
+- Seções: Hero (com prova visual do Kanban), números de resultado, funcionalidades,
+  planos e preços, chamada final e rodapé
+- Seis funcionalidades destacadas: pipeline Kanban, gestão de leads, timeline de
+  atividades, dashboard de métricas, multi-empresa e convites com papéis
+- Quatro números de resultado acima da lista de funcionalidades
+- Todos os CTAs levam ao cadastro
 
 ## 4. USER PERSONAS
 

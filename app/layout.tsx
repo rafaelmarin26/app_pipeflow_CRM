@@ -33,6 +33,11 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  // Resolves the relative URLs the landing page declares for Open Graph and
+  // canonical. Without it Next warns at build and emits them unresolved.
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+  ),
   title: {
     default: "PipeFlow CRM",
     template: "%s · PipeFlow CRM",
