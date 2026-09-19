@@ -77,3 +77,21 @@ export const STAGE_HOVER_BORDER: Record<DealStage, string> = {
   won: "hover:border-stage-won/40",
   lost: "hover:border-stage-lost/40",
 };
+
+/**
+ * The same six tones as raw CSS values, for the places a Tailwind class cannot
+ * reach: SVG `fill` attributes inside Recharts, which paints into a chart it
+ * owns and never sees our class names.
+ *
+ * Pointing at the custom properties rather than repeating the hexes is what
+ * keeps the funnel bar and the Kanban column the same colour after a palette
+ * tweak — there is still exactly one place where `#5B7FFF` is written down.
+ */
+export const STAGE_COLOR: Record<DealStage, string> = {
+  new: "var(--stage-new)",
+  contacted: "var(--stage-contacted)",
+  proposal: "var(--stage-proposal)",
+  negotiation: "var(--stage-negotiation)",
+  won: "var(--stage-won)",
+  lost: "var(--stage-lost)",
+};

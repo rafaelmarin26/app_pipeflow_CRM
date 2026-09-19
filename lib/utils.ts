@@ -43,6 +43,22 @@ export function formatCurrencyCompact(cents: number): string {
   return currency.format(value);
 }
 
+const percent = new Intl.NumberFormat("pt-BR", {
+  style: "percent",
+  maximumFractionDigits: 1,
+});
+
+/**
+ * A fraction of 1 as a percentage — `0.571` becomes `57,1%`.
+ *
+ * Takes a fraction rather than an already-multiplied number so the caller
+ * never has to remember which of the two a function returns; the metrics in
+ * lib/metrics.ts all speak fractions.
+ */
+export function formatPercent(fraction: number): string {
+  return percent.format(fraction);
+}
+
 function toDate(value: string | Date): Date | null {
   const date = typeof value === "string" ? parseISO(value) : value;
   return isValid(date) ? date : null;

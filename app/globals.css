@@ -330,3 +330,33 @@
     transform: none;
   }
 }
+
+/*
+ * Dashboard — PLAN.md M8.
+ *
+ * The same one-entrance-per-screen rule the board follows, at the amplitude the
+ * brand guide specifies for a page: fade plus a 16px rise, staggered by whatever
+ * the element sets on `--stagger`. The board keeps its own shorter 12px travel
+ * because a column is a smaller thing than a panel.
+ */
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility panel-in {
+  animation: panel-in 360ms ease-out both;
+  animation-delay: var(--stagger, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-in {
+    animation: none;
+  }
+}

@@ -1,7 +1,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
 /** Cards per column shell — enough to suggest a board, not enough to look full. */
-const CARDS_PER_COLUMN = [3, 3, 2, 2, 2, 1];
+const CARDS_PER_COLUMN = [4, 3, 3, 2, 2, 2];
 
 /**
  * Mirrors the board geometry exactly — same column width, same gaps, same
