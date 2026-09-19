@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -41,27 +40,6 @@ const ROW_HEIGHT = 44;
 const CHART_PADDING = 8;
 
 type FunnelDatum = FunnelStage;
-
-/**
- * Recharts animates bars on mount. That is an entrance, which the brand guide
- * allows — but it still has to be switched off for a reader who asked for no
- * motion, and a CSS media query cannot reach inside an SVG animation driven by
- * JavaScript.
- */
-function usePrefersReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false);
-
-  useEffect(() => {
-    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduced(query.matches);
-
-    const onChange = (event: MediaQueryListEvent) => setReduced(event.matches);
-    query.addEventListener("change", onChange);
-    return () => query.removeEventListener("change", onChange);
-  }, []);
-
-  return reduced;
-}
 
 /**
  * The category label, in the product's label voice and in its own stage colour —
@@ -140,11 +118,9 @@ function FunnelTooltip({
 function StageBars({
   data,
   domainMax,
-  animate,
 }: {
   data: FunnelDatum[];
   domainMax: number;
-  animate: boolean;
 }) {
   return (
     <ResponsiveContainer
@@ -176,8 +152,13 @@ function StageBars({
           dataKey="count"
           radius={[0, 2, 2, 0]}
           maxBarSize={18}
-          isAnimationActive={animate}
-          animationDuration={520}
+          // Recharts grows its bars from zero width on mount, which is a second
+          // entrance stacked on the panel's own fade-and-rise — and CLAUDE.md
+          // §7 allows one per screen. It is also the fragile one: a bar mid-
+          // animation is a zero-width rectangle that Recharts renders as
+          // nothing at all, so any frame the browser skips leaves the chart
+          // blank. The panel carries the entrance; the bars are drawn final.
+          isAnimationActive={false}
         >
           {data.map((datum) => (
             <Cell key={datum.stage} fill={STAGE_COLOR[datum.stage]} />
@@ -198,8 +179,6 @@ function StageBars({
 }
 
 export function SalesFunnel({ data }: { data: FunnelStage[] }) {
-  const reducedMotion = usePrefersReducedMotion();
-
   const open = data.filter((datum) => !isClosedStage(datum.stage));
   const closed = data.filter((datum) => isClosedStage(datum.stage));
 
@@ -209,18 +188,10 @@ export function SalesFunnel({ data }: { data: FunnelStage[] }) {
 
   return (
     <div className="space-y-1">
-      <StageBars
-        data={open}
-        domainMax={domainMax}
-        animate={!reducedMotion}
-      />
+      <StageBars data={open} domainMax={domainMax} />
 
       <div className="border-t border-hairline pt-1">
-        <StageBars
-          data={closed}
-          domainMax={domainMax}
-          animate={!reducedMotion}
-        />
+        <StageBars data={closed} domainMax={domainMax} />
       </div>
     </div>
   );

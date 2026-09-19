@@ -66,11 +66,13 @@ export function UpcomingDealsTable({ deals }: { deals: DealCardData[] }) {
     <Table>
       <TableHeader>
         <TableRow className="border-hairline hover:bg-transparent">
-          <TableHead className="label-mono text-faint">Negócio</TableHead>
+          <TableHead className="label-mono w-full text-faint">
+            Negócio
+          </TableHead>
           <TableHead className="label-mono hidden text-faint sm:table-cell">
             Etapa
           </TableHead>
-          <TableHead className="label-mono text-right text-faint">
+          <TableHead className="label-mono hidden text-right text-faint sm:table-cell">
             Valor
           </TableHead>
           <TableHead className="label-mono text-right text-faint">
@@ -85,7 +87,11 @@ export function UpcomingDealsTable({ deals }: { deals: DealCardData[] }) {
             key={deal.id}
             className="h-11 border-hairline transition-colors hover:bg-elevated"
           >
-            <TableCell className="py-2">
+            {/* The shadcn cell defaults to nowrap, which would push a long deal
+                title past the panel and force the whole table to scroll. On the
+                first screen after login the title is the one thing worth two
+                lines. */}
+            <TableCell className="py-2 whitespace-normal">
               {/* The deal has no page of its own; its lead is where the full
                   story lives, which is where M12 already sends every other
                   reference to a deal. */}
@@ -100,12 +106,15 @@ export function UpcomingDealsTable({ deals }: { deals: DealCardData[] }) {
                 <span className="font-medium text-foreground">{deal.title}</span>
               )}
 
-              <div className="truncate text-xs text-muted-foreground">
+              <div className="text-xs text-muted-foreground">
                 {deal.lead ? deal.lead.name : "Sem lead vinculado"}
               </div>
 
-              <div className="pt-1 sm:hidden">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 sm:hidden">
                 <StageBadge stage={deal.stage} />
+                <span className="money text-xs text-foreground">
+                  {formatCurrency(deal.value_cents)}
+                </span>
               </div>
             </TableCell>
 
@@ -113,7 +122,7 @@ export function UpcomingDealsTable({ deals }: { deals: DealCardData[] }) {
               <StageBadge stage={deal.stage} />
             </TableCell>
 
-            <TableCell className="py-2 text-right">
+            <TableCell className="hidden py-2 text-right sm:table-cell">
               <span className="money text-sm text-foreground">
                 {formatCurrency(deal.value_cents)}
               </span>
