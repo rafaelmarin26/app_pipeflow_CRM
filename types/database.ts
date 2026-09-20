@@ -81,6 +81,13 @@ export type Database = {
             referencedRelation: "workspaces";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "workspace_members_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
         ];
       };
       invites: {
@@ -123,6 +130,30 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      profiles: {
+        Row: {
+          id: string;
+          name: string;
+          email: string;
+          avatar_url: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          name: string;
+          email: string;
+          avatar_url?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          email?: string;
+          avatar_url?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
       leads: {
         Row: {
@@ -167,6 +198,13 @@ export type Database = {
             columns: ["workspace_id"];
             isOneToOne: false;
             referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "leads_owner_id_fkey";
+            columns: ["owner_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
         ];
@@ -228,6 +266,13 @@ export type Database = {
             referencedRelation: "leads";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "deals_owner_id_fkey";
+            columns: ["owner_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
         ];
       };
       activities: {
@@ -284,6 +329,13 @@ export type Database = {
             columns: ["deal_id"];
             isOneToOne: false;
             referencedRelation: "deals";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "activities_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
         ];
@@ -399,6 +451,7 @@ export const Constants = {
 export type Workspace = Tables<"workspaces">;
 export type WorkspaceMember = Tables<"workspace_members">;
 export type Invite = Tables<"invites">;
+export type Profile = Tables<"profiles">;
 export type Lead = Tables<"leads">;
 export type Deal = Tables<"deals">;
 export type Activity = Tables<"activities">;

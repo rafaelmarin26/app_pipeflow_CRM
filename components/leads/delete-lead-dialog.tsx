@@ -16,23 +16,26 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { fakeSubmit } from "@/lib/fake-submit";
+import { deleteLead } from "@/app/(app)/(shell)/leads/_actions";
 
 /**
- * Destructive confirmation for a lead — PLAN.md M6.
+ * Destructive confirmation for a lead — PLAN.md M6, persisted for real since
+ * M12.
  *
  * An `AlertDialog` rather than the plain `Dialog` on purpose: it announces
  * itself as an alert and refuses to close on a click outside, which is what a
  * destructive question should do.
  *
- * Deleting is fake until M12; `redirectTo` exists because the detail page has to
- * leave a record that no longer exists, while the list stays where it is.
+ * `redirectTo` exists because the detail page has to leave a record that no
+ * longer exists, while the list stays where it is.
  */
 export function DeleteLeadDialog({
+  leadId,
   leadName,
   trigger,
   redirectTo,
 }: {
+  leadId: string;
   leadName: string;
   trigger: React.ReactNode;
   redirectTo?: string;
@@ -46,9 +49,15 @@ export function DeleteLeadDialog({
     event.preventDefault();
     setPending(true);
 
-    await fakeSubmit();
+    const result = await deleteLead(leadId);
 
     setPending(false);
+
+    if (result && "error" in result) {
+      toast.error(result.error);
+      return;
+    }
+
     setOpen(false);
     toast.success(`${leadName} foi excluído.`);
 

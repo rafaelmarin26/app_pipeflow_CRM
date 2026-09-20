@@ -56,6 +56,11 @@ export function LeadsToolbar({
       else params.delete(key);
     }
 
+    // Every call here changes what the list shows, so whatever page the user
+    // was on stops meaning anything — send them back to the first one instead
+    // of leaving `?page=3` pointed at a result set that may not have one.
+    params.delete("page");
+
     const query = params.toString();
 
     startTransition(() => {

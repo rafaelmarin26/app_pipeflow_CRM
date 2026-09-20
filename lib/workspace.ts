@@ -145,3 +145,36 @@ export async function setActiveWorkspaceCookie(workspaceId: string): Promise<voi
   const cookieStore = await cookies();
   cookieStore.set(ACTIVE_WORKSPACE_COOKIE, workspaceId, ACTIVE_WORKSPACE_COOKIE_OPTIONS);
 }
+
+export type WorkspaceContext = {
+  user: User;
+  workspace: Workspace;
+  role: MemberRole;
+};
+
+/**
+ * The "autenticar → resolver workspace ativo" opening of CLAUDE.md §3, shared
+ * by every mutation in `leads/_actions.ts` and `pipeline/_actions.ts` (M12,
+ * M13) so that order is written once instead of copied into each action.
+ * `null` means the caller has no authenticated session or no membership in
+ * the cookie's workspace — either way the action has nothing to do and the
+ * caller redirects to `/login`.
+ */
+export async function requireWorkspaceContext(
+  supabase: SupabaseClient<Database>,
+): Promise<WorkspaceContext | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const memberships = await getUserMemberships(supabase, user.id);
+  const cookieStore = await cookies();
+  const active = resolveActiveMembership(
+    memberships,
+    cookieStore.get(ACTIVE_WORKSPACE_COOKIE)?.value,
+  );
+  if (!active) return null;
+
+  return { user, workspace: active.workspace, role: active.role };
+}

@@ -15,20 +15,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { fakeSubmit } from "@/lib/fake-submit";
+import { createActivity } from "@/app/(app)/(shell)/leads/_actions";
 import { ACTIVITY_TYPE_LABELS, activityTypeOptions } from "@/lib/labels";
 import { activitySchema, type ActivityInput } from "@/lib/validations/activity";
 
 /**
- * Register an activity on the lead — PLAN.md M6.
+ * Register an activity on the lead — PLAN.md M6, persisted for real since
+ * M12: `author_id` is stamped server-side from the authenticated user, never
+ * from this form.
  *
  * Inline rather than in a dialog: logging a call is the most frequent thing
  * anyone does on this page, and a dialog would put a click in front of it.
- *
- * Still a fake submit — M12 turns `onSubmit` into the Server Action that stamps
- * `author_id` from the authenticated user and revalidates the route.
  */
-export function ActivityForm({ leadName }: { leadName: string }) {
+export function ActivityForm({
+  leadId,
+  leadName,
+}: {
+  leadId: string;
+  leadName: string;
+}) {
   const {
     register,
     handleSubmit,
@@ -40,8 +45,13 @@ export function ActivityForm({ leadName }: { leadName: string }) {
     defaultValues: { type: "call", description: "" },
   });
 
-  async function onSubmit() {
-    await fakeSubmit();
+  async function onSubmit(values: ActivityInput) {
+    const result = await createActivity(leadId, values);
+
+    if (result && "error" in result) {
+      toast.error(result.error);
+      return;
+    }
 
     toast.success(`Atividade registrada para ${leadName.split(" ")[0]}.`);
     reset({ type: "call", description: "" });
