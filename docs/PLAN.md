@@ -468,19 +468,37 @@ Admin API — sem acesso à sessão do Supabase Studio do usuário — e apagado
 
 ### Entregas
 
-- [ ] Schemas zod em `lib/validations/lead.ts` e `activity.ts`, compartilhados entre client e servidor
-- [ ] Server Actions de criar, editar e excluir lead, seguindo a ordem obrigatória do CLAUDE.md §3
-- [ ] Listagem como Server Component, com busca e filtros traduzidos em query Postgres
-- [ ] Paginação ou scroll infinito na tabela
-- [ ] Detalhe do lead buscando lead, atividades e negócios em paralelo
-- [ ] Server Action de registrar atividade, com `author_id` do usuário autenticado
-- [ ] `revalidatePath` nas rotas afetadas após cada mutação
-- [ ] Erros retornados em PT-BR, sem vazar mensagem do Postgres
-- [ ] Toast de sucesso e de falha em cada mutação
+- [x] Schemas zod em `lib/validations/lead.ts` e `activity.ts`, compartilhados entre client e servidor
+- [x] Server Actions de criar, editar e excluir lead, seguindo a ordem obrigatória do CLAUDE.md §3
+- [x] Listagem como Server Component, com busca e filtros traduzidos em query Postgres
+- [x] Paginação ou scroll infinito na tabela
+- [x] Detalhe do lead buscando lead, atividades e negócios em paralelo
+- [x] Server Action de registrar atividade, com `author_id` do usuário autenticado
+- [x] `revalidatePath` nas rotas afetadas após cada mutação
+- [x] Erros retornados em PT-BR, sem vazar mensagem do Postgres
+- [x] Toast de sucesso e de falha em cada mutação
+
+> **Desvio registrado.** O plano não previa schema: `owner_id`/`author_id` apontavam
+> para `auth.users`, que o PostgREST não expõe — nenhum join `owner:owner_id(...)`
+> funcionaria. Duas migrations entraram nesta leva: `public.profiles` (espelha nome,
+> e-mail e avatar de `auth.users` via trigger, com backfill dos usuários já
+> existentes) e o realinhamento de `leads.owner_id`, `deals.owner_id`,
+> `activities.author_id` e `workspace_members.user_id` para apontar para ela. Busca
+> por texto usa `ilike` puro — sem a insensibilidade a acento que o mock do M6 tinha
+> (exigiria a extensão `unaccent` com índice funcional, deixado para quando o volume
+> de leads de um workspace justificar o custo). Paginação saiu como Anterior/Próxima
+> de 50 em 50, do tamanho do teto do Free, em vez de scroll infinito.
 
 ### Validação
 
 Criar lead em duas contas de workspaces diferentes e confirmar isolamento. Buscar por termo que existe só em um lead. Registrar atividade e ver a timeline atualizar sem reload manual.
+
+Testado ao vivo contra o projeto remoto nesta leva: leads criados, editados e
+excluídos pela UI conferidos direto contra a tabela via API REST com a
+`service_role` key (fora do cache do Next, então prova persistência de verdade, não
+só que a tela não recarregou). Busca (`ilike`) e filtro por status testados do mesmo
+jeito, direto contra a API. Isolamento entre workspaces diferentes não foi
+reexercitado nesta leva — já validado no M10/M11 e a policy de `leads` não mudou.
 
 **Commit final:** `feat: replace lead mocks with server actions and postgres queries`
 
@@ -492,17 +510,38 @@ Criar lead em duas contas de workspaces diferentes e confirmar isolamento. Busca
 
 ### Entregas
 
-- [ ] Server Actions de criar, editar e excluir negócio
-- [ ] Action de mover negócio: grava `stage` e recalcula `position` entre os vizinhos
-- [ ] Atualização otimista no cliente, com rollback e toast de erro se a action falhar
-- [ ] `closed_at` preenchido ao entrar em `won` ou `lost`, limpo ao sair
+- [x] Server Actions de criar, editar e excluir negócio
+- [x] Action de mover negócio: grava `stage` e recalcula `position` entre os vizinhos
+- [x] Atualização otimista no cliente, com rollback e toast de erro se a action falhar
+- [x] `closed_at` preenchido ao entrar em `won` ou `lost`, limpo ao sair
 - [ ] Totais por coluna calculados no servidor
-- [ ] Board carregando negócios do workspace ativo com o lead e o responsável via join
-- [ ] Dois arrastes rápidos em sequência não embaralham a ordem
+- [x] Board carregando negócios do workspace ativo com o lead e o responsável via join
+- [x] Dois arrastes rápidos em sequência não embaralham a ordem
+
+> **Desvios registrados.** (1) **Totais por coluna continuam no cliente** —
+> `columnSummary()` (`lib/pipeline.ts`) roda no navegador sobre os negócios que o
+> Server Component já buscou, a mesma função pura do M7. Não é uma agregação SQL
+> por coluna; é aceitável porque o array inteiro do workspace já está em memória
+> para o board se desenhar, então somar de novo no servidor só trocaria uma soma em
+> JS por uma query extra. Fica pendente caso um workspace cresça a ponto de a
+> transferência do array completo pesar mais que a soma. (2) **Editar e excluir
+> negócio não existiam antes desta leva** — o M7 só tinha "criar". Adicionado ao
+> `DealCard`: lápis e lixeira, em `<button>` reais fora da área de arraste (o
+> `KeyboardSensor` do dnd-kit já usa a barra de espaço no card para pegar/soltar).
+> (3) A arquitetura do M7 já vinha pronta para isto: `moveDealInBoard()` devolvendo
+> o `position` que a action grava, e o comentário de `pipeline-board.tsx` já
+> antecipava o `onDragEnd` virando Server Action — nada disso precisou mudar de
+> forma.
 
 ### Validação
 
 Arrastar um card, recarregar a página e ver o card na nova etapa. Simular falha da action com a rede offline e confirmar que o card volta para a coluna original com toast.
+
+Testado ao vivo: um negócio criado direto em "Negociação" foi arrastado para
+"Proposta" e a nova `stage`/`position` foram conferidas na tabela via API REST — a
+`position` bateu exatamente com `positionBetween(null, null)` (coluna de destino
+vazia), confirmando que o cálculo do cliente e a gravação do servidor concordam. A
+falha simulada com a rede offline não foi reexercitada nesta leva.
 
 **Commit final:** `feat: persist kanban stage and position with optimistic updates`
 
@@ -514,17 +553,32 @@ Arrastar um card, recarregar a página e ver o card na nova etapa. Simular falha
 
 ### Entregas
 
-- [ ] Queries agregadas por workspace para os 4 cards
-- [ ] Dados do funil agrupados por `deal_stage`, respeitando a ordem do enum
-- [ ] Taxa de conversão como ganhos sobre ganhos mais perdidos, com tratamento de divisão por zero
-- [ ] Prazos próximos filtrados por `owner_id` do usuário autenticado
-- [ ] `lib/metrics.ts` do M8 reutilizado — a lógica de cálculo não é reescrita
+- [x] Queries agregadas por workspace para os 4 cards
+- [x] Dados do funil agrupados por `deal_stage`, respeitando a ordem do enum
+- [x] Taxa de conversão como ganhos sobre ganhos mais perdidos, com tratamento de divisão por zero
+- [x] Prazos próximos filtrados por `owner_id` do usuário autenticado
+- [x] `lib/metrics.ts` do M8 reutilizado — a lógica de cálculo não é reescrita
 - [ ] Agregações pesadas resolvidas em SQL, não em JavaScript sobre todas as linhas
-- [ ] Suspense com os skeletons do M8 enquanto as queries resolvem
+- [x] Suspense com os skeletons do M8 enquanto as queries resolvem
+
+> **Desvio registrado.** Só "total de leads" virou uma agregação SQL de verdade
+> (`select count, head: true` — o banco devolve um número, nenhuma linha trafega).
+> Os outros três cards, o funil e os prazos continuam somados em JavaScript sobre
+> um único `select` de todos os negócios do workspace, reaproveitando
+> `lib/metrics.ts` sem reescrever a lógica em SQL — a alternativa seria uma segunda
+> definição de "taxa de conversão" em SQL, que pode um dia divergir silenciosamente
+> da definição em `lib/metrics.ts`. Como o teto do Free (50 leads, 2 colaboradores)
+> mantém o volume de negócios de um workspace pequeno, essa troca fica aceitável por
+> ora; migrar para agregação SQL é candidato natural se um workspace Pro crescer o
+> suficiente para o `select` completo pesar.
 
 ### Validação
 
 Conferir os 4 números contra consultas SQL diretas. Criar um negócio novo e ver o funil mudar.
+
+Os 4 números foram conferidos contra uma contagem/soma direta na API REST (3 leads,
+4 negócios abertos, R$ 22.150,00 em pipeline, taxa "—" por não haver ganho/perdido
+ainda) e bateram com o que a tela mostrou.
 
 **Commit final:** `feat: compute dashboard metrics from database aggregates`
 
