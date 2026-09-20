@@ -61,19 +61,39 @@ export const dealSchema = z.object({
     .min(2, "Informe um título com pelo menos 2 caracteres.")
     .max(140, "Use no máximo 140 caracteres."),
 
-  value: z
-    .string()
-    .trim()
-    .min(1, "Informe o valor do negócio.")
-    .refine((raw) => parseBrlToCents(raw) !== null, "Informe um valor válido.")
-    .refine(
-      (raw) => (parseBrlToCents(raw) ?? 0) >= 0,
-      "O valor não pode ser negativo.",
-    )
-    // The refinements above already rejected everything `parseBrlToCents` can
-    // fail on, so the fallback is unreachable — it is here to keep the output
-    // typed as a number instead of `number | null`.
-    .transform((raw) => parseBrlToCents(raw) ?? 0),
+  // A string while the browser validates it ("1.480,00", straight off the
+  // input) — but the Server Actions in M13's `pipeline/_actions.ts` run this
+  // same schema a second time on `DealInput`, where `value` has already been
+  // transformed to cents. Accepting both keeps `dealSchema` re-entrant, so
+  // the server can validate its own values without a second, parallel schema
+  // that only accepts numbers.
+  value: z.union([z.string(), z.number()]).transform((raw, ctx) => {
+    if (typeof raw === "number") {
+      if (!Number.isFinite(raw) || raw < 0) {
+        ctx.addIssue({ code: "custom", message: "O valor não pode ser negativo." });
+        return z.NEVER;
+      }
+      return Math.round(raw);
+    }
+
+    const trimmed = raw.trim();
+    if (trimmed === "") {
+      ctx.addIssue({ code: "custom", message: "Informe o valor do negócio." });
+      return z.NEVER;
+    }
+
+    const cents = parseBrlToCents(trimmed);
+    if (cents === null) {
+      ctx.addIssue({ code: "custom", message: "Informe um valor válido." });
+      return z.NEVER;
+    }
+    if (cents < 0) {
+      ctx.addIssue({ code: "custom", message: "O valor não pode ser negativo." });
+      return z.NEVER;
+    }
+
+    return cents;
+  }),
 
   // Optional on purpose: a deal can exist before anyone decides which contact it
   // belongs to. An untouched select submits "", which becomes `null` at the row.

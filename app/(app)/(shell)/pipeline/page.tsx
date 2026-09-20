@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { Plus, SquareKanban } from "lucide-react";
 
 import { DealDialog } from "@/components/pipeline/deal-dialog";
@@ -6,50 +7,47 @@ import { PipelineBoardView } from "@/components/pipeline/pipeline-board";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import {
-  ACTIVE_WORKSPACE_ID,
-  CURRENT_USER_ID,
-  findLead,
-  findUser,
-  mockDeals,
-  mockLeads,
-  mockMembers,
-} from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/server";
+import { requireWorkspaceContext } from "@/lib/workspace";
 import type { DealCardData, Person } from "@/types/views";
 
 export const metadata: Metadata = { title: "Pipeline" };
 
 /**
- * Pipeline Kanban — PLAN.md M7.
- *
- * This file is the only one in the feature that knows where the data comes from.
- * M13 swaps the fixture reads below for a Supabase query with the same two joins
- * (`select *, owner:owner_id (...), lead:lead_id (...)`), and the board keeps
- * receiving the identical `DealCardData[]`.
+ * Pipeline Kanban — PLAN.md M7, with M13's Postgres query in place of the
+ * fixture reads. Still the only file in the feature that knows where the
+ * data comes from — the board keeps receiving the identical `DealCardData[]`.
  */
-export default function PipelinePage() {
-  const owners: Person[] = mockMembers
-    .filter((member) => member.workspace_id === ACTIVE_WORKSPACE_ID)
-    .map((member) => findUser(member.user_id))
+export default async function PipelinePage() {
+  const supabase = await createClient();
+  const context = await requireWorkspaceContext(supabase);
+  if (!context) redirect("/login");
+  const { workspace } = context;
+
+  const [membersResult, leadsResult, dealsResult] = await Promise.all([
+    supabase
+      .from("workspace_members")
+      .select("profile:user_id(id, name, email, avatar_url)")
+      .eq("workspace_id", workspace.id),
+    supabase
+      .from("leads")
+      .select("id, name")
+      .eq("workspace_id", workspace.id)
+      .order("name", { ascending: true }),
+    supabase
+      .from("deals")
+      .select(
+        "*, owner:owner_id(id, name, email, avatar_url), lead:lead_id(id, name, company)",
+      )
+      .eq("workspace_id", workspace.id),
+  ]);
+
+  const owners: Person[] = (membersResult.data ?? [])
+    .map((row) => row.profile)
     .filter((person): person is Person => Boolean(person));
 
-  const leads = mockLeads
-    .filter((lead) => lead.workspace_id === ACTIVE_WORKSPACE_ID)
-    .map((lead) => ({ id: lead.id, name: lead.name }));
-
-  const deals: DealCardData[] = mockDeals
-    .filter((deal) => deal.workspace_id === ACTIVE_WORKSPACE_ID)
-    .map((deal) => {
-      const lead = findLead(deal.lead_id);
-
-      return {
-        ...deal,
-        owner: findUser(deal.owner_id) ?? null,
-        lead: lead
-          ? { id: lead.id, name: lead.name, company: lead.company }
-          : null,
-      };
-    });
+  const leads = leadsResult.data ?? [];
+  const deals = (dealsResult.data ?? []) as DealCardData[];
 
   const newDealButton = (
     <Button>
@@ -62,7 +60,7 @@ export default function PipelinePage() {
     <DealDialog
       leads={leads}
       owners={owners}
-      defaultOwnerId={CURRENT_USER_ID}
+      defaultOwnerId={context.user.id}
       trigger={newDealButton}
     />
   );
@@ -82,7 +80,7 @@ export default function PipelinePage() {
           deals={deals}
           leads={leads}
           owners={owners}
-          defaultOwnerId={CURRENT_USER_ID}
+          defaultOwnerId={context.user.id}
         />
       ) : (
         <EmptyState

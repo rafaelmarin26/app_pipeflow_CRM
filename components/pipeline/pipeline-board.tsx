@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   closestCorners,
   DndContext,
@@ -16,7 +16,9 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { toast } from "sonner";
 
+import { moveDeal } from "@/app/(app)/(shell)/pipeline/_actions";
 import { DealCardPreview } from "@/components/pipeline/deal-card";
 import { KanbanColumn } from "@/components/pipeline/kanban-column";
 import { DEAL_STAGE_LABELS, DEAL_STAGES, isClosedStage } from "@/lib/labels";
@@ -29,14 +31,16 @@ import type { DealStage, Lead } from "@/types/database";
 import type { DealCardData, Person } from "@/types/views";
 
 /**
- * The Kanban board — PLAN.md M7, the hero screen of the product.
+ * The Kanban board — PLAN.md M7, the hero screen of the product, with M13's
+ * drag persistence in place.
  *
- * The drag is local state and nothing else: dropping a card rearranges the
- * board in memory and a reload puts everything back. M13 turns `onDragEnd` into
- * a Server Action call — the optimistic update is already this `setBoard`, and
- * the rollback is keeping the previous board around to restore if the action
- * rejects. `moveDealInBoard()` hands back the `position` that action will write,
- * so no arithmetic has to be repeated on the server.
+ * `setBoard` on drop is still the whole optimistic update: the UI moves the
+ * instant the pointer releases, before the network call resolves. What M13
+ * adds is `moveDeal()` running after it — queued through `moveQueueRef` so
+ * two quick drags of the same card reach the server in the order they
+ * happened, and rolled back to `dragStartBoardRef`'s snapshot with a toast if
+ * the action rejects. `moveDealInBoard()` still hands back the `position`
+ * the action writes, so the rank arithmetic is never repeated server-side.
  */
 
 /** The funnel proper. Rendered together, before the divider. */
@@ -75,12 +79,40 @@ export function PipelineBoardView({
   owners: Person[];
   defaultOwnerId?: string;
 }) {
-  // Seeded once from the server data. Until M13 there is nothing to sync back
-  // to, so the board owns its order for the life of the page.
+  // Seeded from the server data, then kept in sync with it: `deals` gets a
+  // new array every time the page revalidates after a mutation (drag aside,
+  // which patches `board` itself — creating, editing or deleting a deal all
+  // go through a dialog that has no reference to this state at all). Without
+  // this effect, `useState`'s initializer would only ever run once, and a
+  // deal created through the dialog would need a manual reload to appear on
+  // the board it was just added to.
   const [board, setBoard] = useState<PipelineBoard>(() =>
     groupDealsByStage(deals),
   );
+
+  useEffect(() => {
+    setBoard(groupDealsByStage(deals));
+  }, [deals]);
+
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  // The board and the deal's stage as they were the instant the drag began —
+  // not derived from `board` inside the handlers below, which by
+  // `handleDragEnd` already reflects every column the card crossed while
+  // hovering. Rollback needs the *original* board, and `closed_at` needs the
+  // *original* stage.
+  const dragStartBoardRef = useRef<PipelineBoard | null>(null);
+  const dragStartStageRef = useRef<DealStage | null>(null);
+
+  // Serializes the Server Action calls: two drags fired in quick succession
+  // (of the same card, or of two different ones) reach the server in the
+  // order the user made them, so the last request in never loses to a
+  // slower one still in flight.
+  const moveQueueRef = useRef<Promise<void>>(Promise.resolve());
+
+  function queueMove(run: () => Promise<void>) {
+    moveQueueRef.current = moveQueueRef.current.then(run, run);
+  }
 
   const sensors = useSensors(
     // Without a small threshold the pointer sensor swallows plain clicks, and a
@@ -143,7 +175,10 @@ export function PipelineBoardView({
   };
 
   function handleDragStart(event: DragStartEvent) {
-    setActiveId(String(event.active.id));
+    const id = String(event.active.id);
+    setActiveId(id);
+    dragStartBoardRef.current = board;
+    dragStartStageRef.current = findDeal(board, id)?.stage ?? null;
   }
 
   /**
@@ -176,16 +211,37 @@ export function PipelineBoardView({
 
     const activeCardId = String(active.id);
     const overId = String(over.id);
+    const fromStage = dragStartStageRef.current;
+    const boardBeforeDrag = dragStartBoardRef.current;
 
     setBoard((current) => {
       const to = columnOf(current, overId);
-      if (!to) return current;
+      if (!to || !fromStage) return current;
 
       const overIndex = current[to].findIndex((deal) => deal.id === overId);
       const index = overIndex >= 0 ? overIndex : current[to].length;
 
-      // M13: the `position` returned here is what the Server Action persists.
-      return moveDealInBoard(current, activeCardId, to, index).board;
+      const { board: next, position } = moveDealInBoard(
+        current,
+        activeCardId,
+        to,
+        index,
+      );
+
+      // The id was not on the board (drag of something already gone) —
+      // nothing moved, so there is nothing to persist either.
+      if (next === current) return current;
+
+      queueMove(async () => {
+        const result = await moveDeal(activeCardId, fromStage, to, position);
+
+        if (result && "error" in result) {
+          toast.error(result.error);
+          if (boardBeforeDrag) setBoard(boardBeforeDrag);
+        }
+      });
+
+      return next;
     });
   }
 

@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { fakeSubmit } from "@/lib/fake-submit";
+import { createDeal, updateDeal } from "@/app/(app)/(shell)/pipeline/_actions";
 import { dealStageOptions } from "@/lib/labels";
 import {
   centsToInputValue,
@@ -38,14 +38,10 @@ import type { DealStage, Lead } from "@/types/database";
 import type { DealCardData, Person } from "@/types/views";
 
 /**
- * Create and edit a deal — PLAN.md M7. Same shape as the lead dialog of M6: one
- * component in two modes, because the fields and the rules are identical and a
- * second dialog would be a second place to forget a field.
- *
- * The submit is still fake (`lib/fake-submit.ts`): it validates, shows the
- * pending state and confirms, but the board does not change — persistence is
- * M13, where this handler becomes a call to the Server Action and nothing else
- * here moves.
+ * Create and edit a deal — PLAN.md M7, persisted for real since M13. Same
+ * shape as the lead dialog of M6: one component in two modes, because the
+ * fields and the rules are identical and a second dialog would be a second
+ * place to forget a field.
  */
 
 /**
@@ -104,7 +100,14 @@ export function DealDialog({
   });
 
   async function onSubmit(values: DealInput) {
-    await fakeSubmit();
+    const result = editing
+      ? await updateDeal(deal!.id, values)
+      : await createDeal(values);
+
+    if (result && "error" in result) {
+      toast.error(result.error);
+      return;
+    }
 
     toast.success(
       editing ? "Negócio atualizado." : `Negócio ${values.title} criado.`,
