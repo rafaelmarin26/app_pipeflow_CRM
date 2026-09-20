@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "sonner";
 
+import { createWorkspace } from "@/app/(app)/onboarding/_actions";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { Field, fieldAria } from "@/components/shared/field";
+import { FormError } from "@/components/shared/form-error";
 import { Input } from "@/components/ui/input";
-import { fakeSubmit } from "@/lib/fake-submit";
 import { slugify } from "@/lib/utils";
 import {
   workspaceSchema,
@@ -17,16 +16,15 @@ import {
 } from "@/lib/validations/workspace";
 
 /**
- * Single step of onboarding — PLAN.md M5: name the first workspace. The slug is
- * derived from the name rather than asked for, because it is an implementation
- * detail the user should never have to think about.
+ * Single step of onboarding — PLAN.md M5/M11: name the first workspace. The
+ * slug is derived from the name rather than asked for, because it is an
+ * implementation detail the user should never have to think about.
  *
- * M11 replaces `fakeSubmit` with the action that creates the workspace and the
- * admin membership for real.
+ * `createWorkspace` creates the workspace and the admin membership for real
+ * and redirects to the dashboard itself on success.
  */
 export function WorkspaceForm() {
-  const router = useRouter();
-  const [redirecting, setRedirecting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const {
     register,
@@ -39,17 +37,19 @@ export function WorkspaceForm() {
   });
 
   const slug = slugify(watch("name"));
-  const pending = isSubmitting || redirecting;
 
   async function onSubmit(values: WorkspaceInput) {
-    await fakeSubmit();
-    setRedirecting(true);
-    toast.success(`Workspace ${values.name} criado.`);
-    router.push("/dashboard");
+    setFormError(null);
+    const result = await createWorkspace(values);
+    if (result?.error) {
+      setFormError(result.error);
+    }
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+      <FormError message={formError} />
+
       <Field
         id="name"
         label="Nome do workspace"
@@ -72,7 +72,7 @@ export function WorkspaceForm() {
         />
       </Field>
 
-      <SubmitButton pending={pending} pendingLabel="Criando workspace...">
+      <SubmitButton pending={isSubmitting} pendingLabel="Criando workspace...">
         Criar workspace
       </SubmitButton>
     </form>

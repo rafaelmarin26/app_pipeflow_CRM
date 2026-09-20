@@ -363,6 +363,23 @@ Alternar o papel no mock e confirmar que a UI de Admin desaparece; barras de uso
 
 Autenticado como membro do workspace A, consultar dados do workspace B retorna **zero linhas** — testado via SQL e via client. `types/database.ts` compila sem quebrar nenhuma tela da Fase 2.
 
+> **Hardening adicional (leva do M11).** Revisando o schema contra o skill
+> `supabase-postgres-best-practices`: `is_workspace_member()` e `is_workspace_admin()` são
+> `security definer` em `public`, e o Postgres concede `execute` a `PUBLIC` (e o Supabase, direto
+> a `anon`/`authenticated`) em toda função nova por padrão — qualquer `security definer` em
+> `public` nasce como endpoint público, independente de alguma policy chamá-la. Nenhuma das duas
+> vaza dado hoje: o `(select auth.uid())` interno resolve `null` fora de sessão, e
+> `user_id = null` nunca casa. Mesmo assim, a migration
+> `20260920040000_restrict_membership_helpers_to_authenticated.sql` revoga `execute` de
+> `public`/`anon` e concede só a `authenticated` — o mesmo remendo que `20260920030000` já tinha
+> aplicado a `create_workspace_with_owner()`, agora estendido às duas funções que ficaram de
+> fora daquela leva. **Aplicada no projeto remoto** via SQL Editor do Studio (sem CLI
+> autenticado nem acesso direto ao Postgres nesta sessão, não havia como eu rodar `db push`
+> sozinho). Confirmado ao vivo com a `anon key`: as duas RPCs agora respondem `permission
+> denied for function ...` (42501) para `anon`, e o fluxo completo — login, onboarding,
+> dashboard, logout, bloqueio das 5 rotas protegidas — repetido com `authenticated` continua
+> passando sem diferença nenhuma.
+
 **Commit final:** `feat: add database schema with enums, indexes and rls policies`
 
 ---
@@ -373,19 +390,73 @@ Autenticado como membro do workspace A, consultar dados do workspace B retorna *
 
 ### Entregas
 
-- [ ] Server Actions de signup, login e logout
-- [ ] `app/(auth)/callback/route.ts` trocando o code pela sessão
-- [ ] `middleware.ts` com refresh de sessão e guarda das rotas autenticadas
-- [ ] Autorização no servidor via `getUser()` — `getSession()` não aparece em lugar nenhum
-- [ ] Redirecionamento pós-login para o último workspace; sem workspace, para o onboarding
-- [ ] Onboarding criando workspace + vínculo de Admin de verdade
-- [ ] Workspace ativo resolvido no servidor e propagado pelo layout
-- [ ] Erros do Supabase traduzidos para PT-BR (credenciais inválidas, e-mail já cadastrado)
+- [x] Server Actions de signup, login e logout
+- [x] `app/(auth)/callback/route.ts` trocando o code pela sessão
+- [x] `middleware.ts` com refresh de sessão e guarda das rotas autenticadas
+- [x] Autorização no servidor via `getUser()` — `getSession()` não aparece em lugar nenhum
+- [x] Redirecionamento pós-login para o último workspace; sem workspace, para o onboarding
+- [x] Onboarding criando workspace + vínculo de Admin de verdade
+- [x] Workspace ativo resolvido no servidor e propagado pelo layout
+- [x] Erros do Supabase traduzidos para PT-BR (credenciais inválidas, e-mail já cadastrado)
 - [ ] Recuperação de senha ponta a ponta
+
+> **Desvios registrados.** (1) O pedido de implementação chamou o arquivo de `proxy.ts` —
+> nome que só existe a partir do Next.js 16, onde `middleware.ts`/`middleware()`/`config`
+> viram `proxy.ts`/`proxy()`/`proxyConfig`. Este projeto está fixado em Next `^15`
+> (CLAUDE.md §2, versão instalada 15.5.25), que não reconhece esse arquivo; a entrega saiu
+> como `middleware.ts`, como o próprio CLAUDE.md §3 já previa. (2) O "workspace ativo" ganhou
+> um cookie (`pf-active-workspace`, `lib/workspace.ts`) e uma Server Action de troca real
+> (`switchWorkspace`) nesta leva, adiantando um pedaço do M15 — sem isso o switcher da M4 não
+> tinha onde persistir a escolha entre requisições. O restante do M15 (convites, papéis
+> alterados por Admin, criar workspace adicional pelo switcher) continua fora do escopo.
+> (3) `create_workspace_with_owner()` recebe um slug derivado do nome; como a coluna é
+> `unique`, a action tenta sufixos (`-2`, `-3`, ...) até 5 vezes antes de desistir, para dois
+> workspaces com o mesmo nome não quebrarem o onboarding. (4) A recuperação de senha
+> (`recuperar-senha/`) continua no `fakeSubmit` do M5 — fica para a próxima leva do M11, que
+> também precisa de uma tela para digitar a senha nova depois do link, ainda não prevista na
+> estrutura do CLAUDE.md §3. (5) Confirmado ao vivo contra o projeto Supabase remoto: a
+> confirmação de e-mail está **ligada**, então `signup` sempre volta com `data.session === null`
+> — a UI mostra um painel neutro ("enviamos um link de confirmação"), não um erro, porque não é
+> uma falha. O envio de e-mail do provedor padrão do Supabase tem um limite de taxa baixo, que
+> a bateria de testes desta leva esgotou (dois `signUp` seguidos já bastam); a validação deste
+> milestone só reproduz "criar conta → onboarding → dashboard" sem esbarrar nisso depois que um
+> SMTP próprio (Resend, M15) estiver configurado, ou com a confirmação desligada no projeto.
+> (6) `signup` ganhou `emailRedirectTo` apontando para `/callback?next=/onboarding` — sem isso
+> o link de confirmação usa a Site URL padrão do projeto e o `code` nunca chega à rota que
+> troca por sessão. (7) O `middleware.ts` tinha um bug real: ao redirecionar (`/login` sem
+> sessão, `/dashboard` já logado), ele descartava os cookies que `getUser()` acabou de
+> renovar, porque `NextResponse.redirect()` cria uma resposta nova em vez de reaproveitar a que
+> carregava o refresh. `lib/supabase/middleware.ts` agora copia esses cookies para toda
+> resposta de redirect — o padrão que a própria documentação do `@supabase/ssr` describe como
+> pegadinha.
 
 ### Validação
 
 Criar conta nova → onboarding → dashboard. Acessar `/dashboard` deslogado redireciona para `/login`. Sessão sobrevive a um reload.
+
+Testado de ponta a ponta contra o projeto Supabase remoto, em duas rodadas. Na primeira, com
+um usuário pré-confirmado via Admin API (sem consumir a cota de e-mail): login sem workspace
+vai para `/onboarding`; criar o workspace grava a linha em `workspaces` e a associação `admin`
+em `workspace_members` e redireciona para `/dashboard`, que já chega mostrando o nome do
+usuário e do workspace reais na sidebar; recarregar `/dashboard` mantém a sessão; sair pelo
+menu do usuário volta para `/login`.
+
+Na segunda rodada, o registro em si: `admin.generateLink()` criou um usuário não confirmado e
+devolveu o link de confirmação sem gastar a cota de e-mail (equivalente a receber o e-mail,
+sem o enviar de verdade). Abrir esse link confirma a conta no Supabase (`email_confirmed_at`
+gravado) — mas por ser gerado fora do navegador, sem o `code_verifier` que o PKCE do
+`@supabase/ssr` guarda em cookie durante um `signUp` real, ele volta com os tokens no
+fragmento da URL em vez de `?code=`, e a `/callback` (que só sabe ler `code`) cai no fallback
+para `/login`. Ler o código-fonte de `@supabase/ssr` confirma que `createBrowserClient` e
+`createServerClient` fixam `flowType: "pkce"` — um cadastro real feito pela tela `/signup`
+gera o `code_verifier` e persiste como cookie na mesma resposta do Server Action, então o link
+de um cadastro de verdade chega com `?code=` e a `/callback` completa a troca normalmente.
+Como a cota de e-mail do projeto está zerada agora, não foi possível clicar um link
+100% real ponta a ponta nesta leva — login com a conta já confirmada, criação do workspace,
+dashboard, logout e bloqueio das 5 rotas protegidas (`/dashboard`, `/leads`, `/pipeline`,
+`/settings`, `/onboarding`) foram revalidados depois do fix do middleware, todos passando.
+Os registros de teste (usuário, workspace, membership) foram conferidos direto nas tabelas via
+Admin API — sem acesso à sessão do Supabase Studio do usuário — e apagados ao final.
 
 **Commit final:** `feat: wire supabase auth with session middleware and route protection`
 
