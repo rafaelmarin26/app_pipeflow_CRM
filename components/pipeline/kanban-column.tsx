@@ -134,6 +134,8 @@ export function KanbanColumn({
                 <DealCard
                   key={deal.id}
                   deal={deal}
+                  leads={leads}
+                  owners={owners}
                   enterDelayMs={
                     index * 60 + CARD_LEAD_MS + cardIndex * CARD_STAGGER_MS
                   }

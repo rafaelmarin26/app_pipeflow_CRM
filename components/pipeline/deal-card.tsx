@@ -3,12 +3,17 @@
 import type { CSSProperties } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Pencil, Trash } from "lucide-react";
 
+import { DealDialog } from "@/components/pipeline/deal-dialog";
+import { DeleteDealDialog } from "@/components/pipeline/delete-deal-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { dueState, type DueState } from "@/lib/pipeline";
 import { STAGE_TEXT } from "@/lib/stage-styles";
 import { cn, formatCurrency, formatDate, initials } from "@/lib/utils";
-import type { DealCardData } from "@/types/views";
+import type { Lead } from "@/types/database";
+import type { DealCardData, Person } from "@/types/views";
 
 /**
  * A deal on the board — PLAN.md M7, restyled for Identidade Visual v2.
@@ -124,12 +129,25 @@ function DealCardBody({
  * The card as it appears inside a column. `attributes` from dnd-kit make it
  * focusable and give it the role a screen reader needs; the listeners sit on the
  * whole body, so the card is its own drag handle by pointer and by keyboard.
+ *
+ * Edit and delete — PLAN.md M13, a gap the mock board never had to fill
+ * (nothing ever needed to change once seeded). Both live in real `<button>`s
+ * rather than on the card body itself: dnd-kit's keyboard sensor already
+ * owns Space on the draggable div for pick-up/drop, so an edit affordance
+ * that depended on Enter/Space there would fight it. `onPointerDown`'s
+ * `stopPropagation` keeps a mouse click on either button from also being
+ * read by dnd-kit as the start of a drag.
  */
 export function DealCard({
   deal,
+  leads,
+  owners,
   enterDelayMs = 0,
 }: {
   deal: DealCardData;
+  /** Options the edit dialog's "Lead" and "Responsável" selects need. */
+  leads: Pick<Lead, "id" | "name">[];
+  owners: Person[];
   /** Stagger of the entrance cascade, in milliseconds. */
   enterDelayMs?: number;
 }) {
@@ -148,7 +166,7 @@ export function DealCard({
 
   return (
     <li
-      className="board-card-in"
+      className="board-card-in group relative"
       style={{ "--stagger": `${enterDelayMs}ms` } as CSSProperties}
     >
       <div
@@ -171,6 +189,45 @@ export function DealCard({
           )}
         />
       </div>
+
+      {!isDragging ? (
+        <div className="absolute top-2 right-2 flex items-center gap-0.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
+          <DealDialog
+            leads={leads}
+            owners={owners}
+            deal={deal}
+            trigger={
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onPointerDown={(event) => event.stopPropagation()}
+                className="bg-panel text-faint hover:text-brand"
+                aria-label={`Editar ${deal.title}`}
+                title="Editar"
+              >
+                <Pencil aria-hidden />
+              </Button>
+            }
+          />
+
+          <DeleteDealDialog
+            dealId={deal.id}
+            dealTitle={deal.title}
+            trigger={
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onPointerDown={(event) => event.stopPropagation()}
+                className="bg-panel text-faint hover:text-negative"
+                aria-label={`Excluir ${deal.title}`}
+                title="Excluir"
+              >
+                <Trash aria-hidden />
+              </Button>
+            }
+          />
+        </div>
+      ) : null}
     </li>
   );
 }
