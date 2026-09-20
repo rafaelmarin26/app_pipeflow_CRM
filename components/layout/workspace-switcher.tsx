@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Building2, Check, ChevronsUpDown } from "lucide-react";
+import { toast } from "sonner";
 
+import { switchWorkspace } from "@/app/(app)/(shell)/_actions";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -16,9 +19,10 @@ import { cn } from "@/lib/utils";
 import type { Workspace } from "@/types/database";
 
 /**
- * Switching is local state for now: it moves the check mark and relabels the
- * trigger, but the screens still read the same fixtures. M15 turns this into a
- * real context switch persisted on the server.
+ * The active workspace is resolved on the server (`lib/workspace.ts`,
+ * PLAN.md M11) and arrives here as a prop; picking another one calls the
+ * `switchWorkspace` Server Action to move the cookie, then refreshes the
+ * router so every Server Component on the current page re-reads it.
  */
 export function WorkspaceSwitcher({
   workspaces,
@@ -27,16 +31,33 @@ export function WorkspaceSwitcher({
   workspaces: Workspace[];
   activeWorkspaceId: string;
 }) {
-  const [selectedId, setSelectedId] = useState(activeWorkspaceId);
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
   const selected =
-    workspaces.find((workspace) => workspace.id === selectedId) ?? workspaces[0];
+    workspaces.find((workspace) => workspace.id === activeWorkspaceId) ?? workspaces[0];
+
+  function handleSelect(workspaceId: string) {
+    if (workspaceId === activeWorkspaceId) return;
+
+    startTransition(async () => {
+      const result = await switchWorkspace(workspaceId);
+      if (result?.error) {
+        toast.error(result.error);
+        return;
+      }
+      router.refresh();
+    });
+  }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
+        disabled={isPending}
         className={cn(
           "flex w-full items-center gap-2 rounded-md border border-border bg-canvas px-2.5 py-2 text-left text-sm outline-none transition-colors",
           "hover:bg-accent focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
+          "disabled:opacity-60",
         )}
         aria-label="Trocar de workspace"
       >
@@ -67,7 +88,7 @@ export function WorkspaceSwitcher({
         {workspaces.map((workspace) => (
           <DropdownMenuItem
             key={workspace.id}
-            onSelect={() => setSelectedId(workspace.id)}
+            onSelect={() => handleSelect(workspace.id)}
             className="gap-2"
           >
             <span className="min-w-0 flex-1 truncate">{workspace.name}</span>
@@ -79,7 +100,7 @@ export function WorkspaceSwitcher({
             <Check
               className={cn(
                 "size-4 shrink-0 text-primary",
-                workspace.id === selectedId ? "opacity-100" : "opacity-0",
+                workspace.id === activeWorkspaceId ? "opacity-100" : "opacity-0",
               )}
               aria-hidden
             />

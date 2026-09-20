@@ -2,26 +2,24 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "sonner";
 
+import { login } from "@/app/(auth)/login/_actions";
 import { PasswordInput } from "@/components/auth/password-input";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { Field, fieldAria } from "@/components/shared/field";
+import { FormError } from "@/components/shared/form-error";
 import { Input } from "@/components/ui/input";
-import { fakeSubmit } from "@/lib/fake-submit";
 import { loginSchema, type LoginInput } from "@/lib/validations/auth";
 
 /**
- * M5 is interface only: the fields are validated, but no credential is checked.
- * M11 swaps `fakeSubmit` for the sign-in Server Action and surfaces its
- * `{ error }` as a form-level message — the markup below does not change.
+ * PLAN.md M11: `login` signs the user in and redirects on success by calling
+ * `redirect()` itself, so this component only ever needs to handle the
+ * `{ error }` shape it returns on failure.
  */
 export function LoginForm() {
-  const router = useRouter();
-  const [redirecting, setRedirecting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const {
     register,
@@ -32,19 +30,18 @@ export function LoginForm() {
     defaultValues: { email: "", password: "" },
   });
 
-  // Stays locked through the navigation: the form unmounts only once the
-  // dashboard has rendered, and an enabled button in between invites a second click.
-  const pending = isSubmitting || redirecting;
-
-  async function onSubmit() {
-    await fakeSubmit();
-    setRedirecting(true);
-    toast.success("Sessão iniciada.");
-    router.push("/dashboard");
+  async function onSubmit(values: LoginInput) {
+    setFormError(null);
+    const result = await login(values);
+    if (result?.error) {
+      setFormError(result.error);
+    }
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+      <FormError message={formError} />
+
       <Field id="email" label="E-mail" error={errors.email?.message}>
         <Input
           {...register("email")}
@@ -73,7 +70,7 @@ export function LoginForm() {
         </Link>
       </div>
 
-      <SubmitButton pending={pending} pendingLabel="Entrando...">
+      <SubmitButton pending={isSubmitting} pendingLabel="Entrando...">
         Entrar
       </SubmitButton>
     </form>

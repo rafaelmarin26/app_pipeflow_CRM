@@ -1,27 +1,38 @@
+import { redirect } from "next/navigation";
+
 import { SidebarContent } from "@/components/layout/sidebar-content";
 import { Topbar } from "@/components/layout/topbar";
-import {
-  ACTIVE_WORKSPACE_ID,
-  currentUser,
-  currentUserRole,
-  mockWorkspaces,
-} from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/server";
+import { getShellData } from "@/lib/workspace";
 
 /**
- * Shell of the authenticated area — PLAN.md M4.
+ * Shell of the authenticated area — PLAN.md M4/M11.
  *
- * This is the only place in the shell that knows where the data comes from.
- * M11 swaps these fixtures for `getUser()` plus the active workspace resolved on
- * the server; every component below keeps receiving the same props.
+ * This is the only place in the shell that knows where the data comes from:
+ * the user and the active workspace are resolved here, on the server, and
+ * every component below just receives them as props. The middleware already
+ * keeps a signed-out request from reaching this layout, but CLAUDE.md §5 has
+ * this layer authorize itself too rather than rely on that alone.
  */
-export default function AppLayout({
+export default async function AppLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const supabase = await createClient();
+  const data = await getShellData(supabase);
+
+  if (data.status === "unauthenticated") {
+    redirect("/login");
+  }
+
+  if (data.status === "no-workspace") {
+    redirect("/onboarding");
+  }
+
   const shell = {
-    workspaces: mockWorkspaces,
-    activeWorkspaceId: ACTIVE_WORKSPACE_ID,
-    user: currentUser,
-    role: currentUserRole,
+    workspaces: data.memberships.map((membership) => membership.workspace),
+    activeWorkspaceId: data.active.workspace.id,
+    user: data.user,
+    role: data.active.role,
   };
 
   return (

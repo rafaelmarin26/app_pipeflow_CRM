@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChevronsUpDown, LogOut, Settings } from "lucide-react";
 
+import { signOut } from "@/app/(app)/(shell)/_actions";
 import type { ShellUser } from "@/components/layout/nav-items";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -79,12 +80,14 @@ export function UserMenu({
 
         <DropdownMenuSeparator />
 
-        {/* Navigation only: M11 turns this into the sign-out Server Action. */}
-        <DropdownMenuItem asChild>
-          <Link href="/login" onClick={onNavigate}>
-            <LogOut className="size-4" aria-hidden />
-            Sair
-          </Link>
+        <DropdownMenuItem
+          onSelect={() => {
+            onNavigate?.();
+            void signOut();
+          }}
+        >
+          <LogOut className="size-4" aria-hidden />
+          Sair
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

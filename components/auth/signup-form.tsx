@@ -1,17 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckIcon } from "lucide-react";
-import { toast } from "sonner";
+import { CheckIcon, MailCheckIcon } from "lucide-react";
 
+import { signup } from "@/app/(auth)/signup/_actions";
 import { PasswordInput } from "@/components/auth/password-input";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { Field, fieldAria } from "@/components/shared/field";
+import { FormError } from "@/components/shared/form-error";
 import { Input } from "@/components/ui/input";
-import { fakeSubmit } from "@/lib/fake-submit";
 import { cn } from "@/lib/utils";
 import {
   passwordRules,
@@ -20,12 +19,15 @@ import {
 } from "@/lib/validations/auth";
 
 /**
- * Signup — PLAN.md M5. Leads to onboarding, because a brand new account has no
- * workspace yet. M11 turns this into the real Supabase sign-up.
+ * PLAN.md M11: `signup` creates the account and redirects to onboarding
+ * itself when the project lets a session through immediately. This project
+ * has e-mail confirmation on, so the usual outcome is `needsConfirmation`
+ * instead — rendered as a neutral panel, not `FormError`, since sending the
+ * link is a success, not a failure.
  */
 export function SignupForm() {
-  const router = useRouter();
-  const [redirecting, setRedirecting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [confirmationSentTo, setConfirmationSentTo] = useState<string | null>(null);
 
   const {
     register,
@@ -38,17 +40,36 @@ export function SignupForm() {
   });
 
   const password = watch("password");
-  const pending = isSubmitting || redirecting;
 
   async function onSubmit(values: SignupInput) {
-    await fakeSubmit();
-    setRedirecting(true);
-    toast.success(`Conta criada. Bem-vindo, ${values.name.split(" ")[0]}.`);
-    router.push("/onboarding");
+    setFormError(null);
+    const result = await signup(values);
+    if (result && "error" in result) {
+      setFormError(result.error);
+    } else if (result && "needsConfirmation" in result) {
+      setConfirmationSentTo(values.email);
+    }
+  }
+
+  if (confirmationSentTo) {
+    return (
+      <div className="space-y-2">
+        <MailCheckIcon className="size-5 text-muted-foreground" aria-hidden />
+        <p className="text-sm">
+          Enviamos um link de confirmação para{" "}
+          <span className="font-medium">{confirmationSentTo}</span>.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Abra-o para ativar sua conta e continuar. Confira também a caixa de spam.
+        </p>
+      </div>
+    );
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+      <FormError message={formError} />
+
       <Field id="name" label="Nome" error={errors.name?.message}>
         <Input
           {...register("name")}
@@ -86,7 +107,7 @@ export function SignupForm() {
         />
       </Field>
 
-      <SubmitButton pending={pending} pendingLabel="Criando conta...">
+      <SubmitButton pending={isSubmitting} pendingLabel="Criando conta...">
         Criar conta
       </SubmitButton>
     </form>
