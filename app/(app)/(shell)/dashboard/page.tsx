@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   CalendarClock,
   Percent,
@@ -23,15 +24,9 @@ import {
   openPipelineValueCents,
   upcomingDeals,
 } from "@/lib/metrics";
-import {
-  ACTIVE_WORKSPACE_ID,
-  CURRENT_USER_ID,
-  findLead,
-  findUser,
-  mockDeals,
-  mockLeads,
-} from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/server";
 import { formatCurrency, formatPercent } from "@/lib/utils";
+import { requireWorkspaceContext } from "@/lib/workspace";
 import type { DealCardData } from "@/types/views";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -40,37 +35,44 @@ export const metadata: Metadata = { title: "Dashboard" };
 const UPCOMING_LIMIT = 6;
 
 /**
- * Dashboard — PLAN.md M8. The first screen after login.
+ * Dashboard — PLAN.md M8, with M14's Supabase aggregates in place of the
+ * fixture reads. The first screen after login.
  *
- * This file is the only one in the feature that knows where the data comes
- * from. M14 replaces the two fixture reads below with Supabase aggregates and
- * keeps calling the very same functions in lib/metrics.ts, so what a number
- * means is defined in exactly one place regardless of who computed it.
+ * The lead count is the one truly heavy aggregate here (a workspace can have
+ * many more leads than deals), so it runs as a `head: true` count — the
+ * database returns a number, never the rows. Deals come back as full rows
+ * because `lib/metrics.ts`'s functions are the definition of what each
+ * figure means (CLAUDE.md-style single source of truth): recomputing them in
+ * SQL would be a second, parallel definition of "taxa de conversão" that the
+ * dashboard and a future report could quietly disagree on. A workspace's deal
+ * count is bounded by the same Free-plan economics as its lead count, so this
+ * is not the query that needs to become a database-side aggregate first.
  */
-export default function DashboardPage() {
-  const leads = mockLeads.filter(
-    (lead) => lead.workspace_id === ACTIVE_WORKSPACE_ID,
-  );
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const context = await requireWorkspaceContext(supabase);
+  if (!context) redirect("/login");
+  const { workspace, user } = context;
 
-  // Stands in for `select *, owner:owner_id (...), lead:lead_id (...)` — the
-  // same shape the Kanban board already consumes.
-  const deals: DealCardData[] = mockDeals
-    .filter((deal) => deal.workspace_id === ACTIVE_WORKSPACE_ID)
-    .map((deal) => {
-      const lead = findLead(deal.lead_id);
+  const [leadsCountResult, dealsResult] = await Promise.all([
+    supabase
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", workspace.id),
+    supabase
+      .from("deals")
+      .select(
+        "*, owner:owner_id(id, name, email, avatar_url), lead:lead_id(id, name, company)",
+      )
+      .eq("workspace_id", workspace.id),
+  ]);
 
-      return {
-        ...deal,
-        owner: findUser(deal.owner_id) ?? null,
-        lead: lead
-          ? { id: lead.id, name: lead.name, company: lead.company }
-          : null,
-      };
-    });
+  const leadsCount = leadsCountResult.count ?? 0;
+  const deals = (dealsResult.data ?? []) as DealCardData[];
 
   const funnel = buildFunnel(deals);
   const rate = conversionRate(deals);
-  const upcoming = upcomingDeals(deals, CURRENT_USER_ID, UPCOMING_LIMIT);
+  const upcoming = upcomingDeals(deals, user.id, UPCOMING_LIMIT);
 
   const won = funnel.find((entry) => entry.stage === "won")?.count ?? 0;
   const lost = funnel.find((entry) => entry.stage === "lost")?.count ?? 0;
@@ -84,7 +86,7 @@ export default function DashboardPage() {
 
   // A workspace created a minute ago has nothing to average, and four zeros
   // would read as a broken screen rather than an empty one (CLAUDE.md §7).
-  if (leads.length === 0 && deals.length === 0) {
+  if (leadsCount === 0 && deals.length === 0) {
     return (
       <div className="space-y-6">
         {header}
@@ -111,7 +113,7 @@ export default function DashboardPage() {
         <MetricCard
           label="Total de leads"
           icon={Users}
-          value={<span className="display-lg">{leads.length}</span>}
+          value={<span className="display-lg">{leadsCount}</span>}
           hint="Contatos cadastrados neste workspace."
           enterDelayMs={0}
         />
