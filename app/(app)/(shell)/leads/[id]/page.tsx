@@ -1,20 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { ActivityForm } from "@/components/leads/activity-form";
 import { ActivityTimeline } from "@/components/leads/activity-timeline";
 import { LeadDeals } from "@/components/leads/lead-deals";
 import { LeadDetailHeader } from "@/components/leads/lead-detail-header";
-import {
-  ACTIVE_WORKSPACE_ID,
-  findUser,
-  mockActivities,
-  mockDeals,
-  mockLeads,
-  mockMembers,
-} from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/server";
+import { requireWorkspaceContext } from "@/lib/workspace";
 import type {
   ActivityWithAuthor,
   DealWithOwner,
@@ -25,39 +19,56 @@ import type {
 type PageProps = { params: Promise<{ id: string }> };
 
 /**
- * Lead detail — PLAN.md M6.
+ * Lead detail — PLAN.md M6, with M12's Postgres queries in place of the
+ * fixture reads.
  *
- * The workspace filter on every read is not decoration: it is the shape the
- * queries take in M12, where the same isolation is enforced again by RLS. A lead
- * from another workspace has to be a 404 here, not a lead with missing data.
+ * The workspace filter on every read is not decoration: RLS already enforces
+ * it, but a lead from another workspace still has to render as a 404 here,
+ * not as a lead with missing data — CLAUDE.md §5's "this layer checks for
+ * itself too" applied to reads, not just to the mutations in `_actions.ts`.
  */
-function loadLead(id: string) {
-  const row = mockLeads.find(
-    (lead) => lead.id === id && lead.workspace_id === ACTIVE_WORKSPACE_ID,
-  );
-  if (!row) return null;
+async function loadLead(id: string) {
+  const supabase = await createClient();
+  const context = await requireWorkspaceContext(supabase);
+  if (!context) redirect("/login");
+  const { workspace } = context;
 
-  const lead: LeadWithOwner = { ...row, owner: findUser(row.owner_id) ?? null };
+  const [leadResult, dealsResult, activitiesResult, membersResult] =
+    await Promise.all([
+      supabase
+        .from("leads")
+        .select("*, owner:owner_id(id, name, email, avatar_url)")
+        .eq("id", id)
+        .eq("workspace_id", workspace.id)
+        .maybeSingle(),
+      supabase
+        .from("deals")
+        .select("*, owner:owner_id(id, name, email, avatar_url)")
+        .eq("lead_id", id)
+        .eq("workspace_id", workspace.id)
+        .order("value_cents", { ascending: false }),
+      supabase
+        .from("activities")
+        .select("*, author:author_id(id, name, email, avatar_url)")
+        .eq("lead_id", id)
+        .eq("workspace_id", workspace.id)
+        // Most recent first: the last thing that happened is the thing being
+        // followed up on.
+        .order("occurred_at", { ascending: false }),
+      supabase
+        .from("workspace_members")
+        .select("profile:user_id(id, name, email, avatar_url)")
+        .eq("workspace_id", workspace.id),
+    ]);
 
-  // Three reads that become three parallel queries in M12.
-  const deals: DealWithOwner[] = mockDeals
-    .filter((deal) => deal.lead_id === row.id)
-    .map((deal) => ({ ...deal, owner: findUser(deal.owner_id) ?? null }))
-    .sort((a, b) => b.value_cents - a.value_cents);
+  if (!leadResult.data) return null;
 
-  const activities: ActivityWithAuthor[] = mockActivities
-    .filter((activity) => activity.lead_id === row.id)
-    .map((activity) => ({
-      ...activity,
-      author: findUser(activity.author_id) ?? null,
-    }))
-    // Most recent first: the last thing that happened is the thing being
-    // followed up on.
-    .sort((a, b) => b.occurred_at.localeCompare(a.occurred_at));
+  const lead = leadResult.data as LeadWithOwner;
+  const deals = (dealsResult.data ?? []) as DealWithOwner[];
+  const activities = (activitiesResult.data ?? []) as ActivityWithAuthor[];
 
-  const owners: Person[] = mockMembers
-    .filter((member) => member.workspace_id === ACTIVE_WORKSPACE_ID)
-    .map((member) => findUser(member.user_id))
+  const owners: Person[] = (membersResult.data ?? [])
+    .map((row) => row.profile)
     .filter((person): person is Person => Boolean(person));
 
   return { lead, deals, activities, owners };
@@ -67,14 +78,14 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const data = loadLead(id);
+  const data = await loadLead(id);
 
   return { title: data ? data.lead.name : "Lead não encontrado" };
 }
 
 export default async function LeadDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const data = loadLead(id);
+  const data = await loadLead(id);
 
   // Renders the not-found screen of the shell. Note that Next 15 streams the
   // response before this throws, so the status stays 200 while the screen is
@@ -99,7 +110,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
         <section className="space-y-4 lg:col-span-2">
           <h2 className="text-lg font-semibold text-foreground">Atividades</h2>
 
-          <ActivityForm leadName={lead.name} />
+          <ActivityForm leadId={lead.id} leadName={lead.name} />
           <ActivityTimeline activities={activities} />
         </section>
 

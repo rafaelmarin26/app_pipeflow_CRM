@@ -37,6 +37,7 @@ export function LeadRowActions({
       />
 
       <DeleteLeadDialog
+        leadId={lead.id}
         leadName={lead.name}
         trigger={
           <Button

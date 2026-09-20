@@ -46,6 +46,7 @@ export function LeadDetailHeader({
           />
 
           <DeleteLeadDialog
+            leadId={lead.id}
             leadName={lead.name}
             redirectTo="/leads"
             trigger={

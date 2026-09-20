@@ -26,20 +26,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { fakeSubmit } from "@/lib/fake-submit";
+import { createLead, updateLead } from "@/app/(app)/(shell)/leads/_actions";
 import { leadStatusOptions } from "@/lib/labels";
 import { leadSchema, type LeadInput } from "@/lib/validations/lead";
 import type { LeadWithOwner, Person } from "@/types/views";
 
 /**
- * Create and edit a lead — PLAN.md M6. One component in two modes, because the
- * fields, the rules and the layout are identical and a second dialog would be a
- * second place to forget a field.
- *
- * The submit is still fake (`lib/fake-submit.ts`): it validates, shows the
- * pending state and confirms, but the list does not change — persistence is M12,
- * where this handler becomes a call to the Server Action and nothing else here
- * moves.
+ * Create and edit a lead — PLAN.md M6, persisted for real since M12. One
+ * component in two modes, because the fields, the rules and the layout are
+ * identical and a second dialog would be a second place to forget a field.
  */
 export function LeadDialog({
   owners,
@@ -86,7 +81,14 @@ export function LeadDialog({
   });
 
   async function onSubmit(values: LeadInput) {
-    await fakeSubmit();
+    const result = editing
+      ? await updateLead(lead!.id, values)
+      : await createLead(values);
+
+    if (result && "error" in result) {
+      toast.error(result.error);
+      return;
+    }
 
     toast.success(
       editing

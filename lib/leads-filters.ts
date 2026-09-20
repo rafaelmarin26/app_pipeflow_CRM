@@ -1,16 +1,23 @@
-import { subDays } from "date-fns";
-
 import { Constants, type LeadStatus } from "@/types/database";
-import type { LeadWithOwner, Person } from "@/types/views";
+import type { Person } from "@/types/views";
 
 /**
- * Search and filter rules for the leads list — PLAN.md M6.
- *
- * Deliberately pure: it takes arrays and the parsed query string and returns
- * arrays. M12 replaces the *bodies* of `applyLeadFilters` with a Postgres query,
- * while `parseLeadFilters` and the option lists below stay exactly as they are —
- * the URL contract does not change when the data source does.
+ * Search and filter rules for the leads list — PLAN.md M6, with M12's
+ * Postgres query replacing the in-memory `applyLeadFilters`/
+ * `sortLeadsByCreatedAt` this file used to export. `parseLeadFilters` and the
+ * option lists below are the part of M6 that was already a URL contract, not
+ * an implementation detail, so they stay exactly as they were — the source
+ * of the data changed, not the shape of the query string.
  */
+
+/** Rows per page, matched to the Free plan's lead cap (CLAUDE.md §5). */
+export const LEADS_PAGE_SIZE = 50;
+
+/** `?page=` from the URL, defaulting to (and never below) the first page. */
+export function parseLeadsPage(params: SearchParams): number {
+  const raw = Number(single(params.page));
+  return Number.isInteger(raw) && raw > 1 ? raw : 1;
+}
 
 export const LEAD_PERIODS = [
   { value: "7d", label: "Últimos 7 dias", days: 7 },
@@ -75,41 +82,23 @@ export function hasActiveLeadFilters(filters: LeadFilters): boolean {
   );
 }
 
+/** How many days back a period filter reaches — `leads/page.tsx` turns this into a `gte("created_at", ...)`. */
+export function periodSinceDays(period: LeadPeriod | null): number | null {
+  return LEAD_PERIODS.find((item) => item.value === period)?.days ?? null;
+}
+
 /**
- * Accent- and case-insensitive: someone searching "veronica" has to find
- * "Verônica", and nobody types the circumflex into a search box.
+ * A search term, escaped for Postgrest's `ilike` pattern syntax — `%` and `_`
+ * are wildcards there, and a lead named "50% Off Co." has to be searchable
+ * without those literal characters reopening the pattern.
+ *
+ * Dropped from the M6 mock behaviour: matching there ignored accents
+ * ("veronica" found "Verônica"). Postgres `ilike` alone is case-insensitive
+ * but not accent-insensitive; folding accents server-side needs the
+ * `unaccent` extension wired into an index, which is a real addition to the
+ * schema for a search-quality nicety — left for when a workspace's lead list
+ * is large enough to be worth doing right.
  */
-function normalize(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
-function matchesTerm(lead: LeadWithOwner, term: string): boolean {
-  return [lead.name, lead.email, lead.company].some(
-    (field) => field && normalize(field).includes(term),
-  );
-}
-
-export function applyLeadFilters(
-  leads: LeadWithOwner[],
-  filters: LeadFilters,
-): LeadWithOwner[] {
-  const term = normalize(filters.q.trim());
-  const period = LEAD_PERIODS.find((item) => item.value === filters.period);
-  const since = period ? subDays(new Date(), period.days) : null;
-
-  return leads.filter((lead) => {
-    if (term && !matchesTerm(lead, term)) return false;
-    if (filters.status && lead.status !== filters.status) return false;
-    if (filters.owner && lead.owner_id !== filters.owner) return false;
-    if (since && new Date(lead.created_at) < since) return false;
-    return true;
-  });
-}
-
-/** Newest first — the list is a work queue, and new leads are the work. */
-export function sortLeadsByCreatedAt(leads: LeadWithOwner[]): LeadWithOwner[] {
-  return [...leads].sort((a, b) => b.created_at.localeCompare(a.created_at));
+export function escapeIlikePattern(term: string): string {
+  return term.replace(/[%_\\]/g, (char) => `\\${char}`);
 }

@@ -1,4 +1,4 @@
-import { AuthApiError, isAuthApiError } from "@supabase/supabase-js";
+import { AuthApiError, isAuthApiError, type PostgrestError } from "@supabase/supabase-js";
 
 /**
  * Translates Supabase Auth errors to PT-BR messages safe to show a user —
@@ -34,5 +34,29 @@ export function translateAuthError(error: unknown): string {
       return "A nova senha precisa ser diferente da atual.";
     default:
       return "Não foi possível concluir. Tente novamente em instantes.";
+  }
+}
+
+/**
+ * Translates a Postgrest/Postgres error from a table mutation (leads, deals,
+ * activities, ...) to a PT-BR message safe to show a user — CLAUDE.md §6:
+ * Server Action errors never leak a raw Postgres message.
+ *
+ * Matched by error `code` — Postgrest forwards the SQLSTATE for database
+ * errors (foreign key, RLS) and its own PGRST codes for schema/request
+ * problems — never by `message`, which carries table and column names.
+ */
+export function translateDatabaseError(error: PostgrestError): string {
+  switch (error.code) {
+    case "42501": // insufficient_privilege — RLS rejected the row.
+      return "Você não tem permissão para fazer isso.";
+    case "23503": // foreign_key_violation
+      return "Este registro faz referência a algo que não existe mais.";
+    case "23514": // check_violation
+      return "Verifique os dados informados e tente novamente.";
+    case "PGRST116": // no row found for a query expecting exactly one
+      return "Registro não encontrado.";
+    default:
+      return "Não foi possível salvar. Tente novamente em instantes.";
   }
 }
