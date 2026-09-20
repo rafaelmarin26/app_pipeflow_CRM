@@ -1,8 +1,14 @@
 /**
- * Hand-written stand-in for the generated Supabase types (PLAN.md M2).
+ * Hand-written stand-in for the generated Supabase types.
  *
- * It mirrors the data model in CLAUDE.md §4 *and* the shape that
- * `supabase gen types typescript` emits, so M10 can replace this file wholesale:
+ * The M10 migrations (`supabase/migrations/2026*_*.sql`) now define this
+ * schema for real, but generating this file still requires running
+ * `supabase gen types typescript` against a live database — either the
+ * local stack (`npx supabase start`, needs Docker) or the linked remote
+ * project (needs `supabase login` / `SUPABASE_ACCESS_TOKEN`), neither of
+ * which is available in this environment. This file was updated by hand to
+ * match the migrations exactly (columns, relationships, functions); replace
+ * it wholesale once you can run the real command:
  *
  *   npx supabase gen types typescript --local > types/database.ts
  *
@@ -67,7 +73,15 @@ export type Database = {
           role?: Database["public"]["Enums"]["member_role"];
           created_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       invites: {
         Row: {
@@ -100,7 +114,15 @@ export type Database = {
           accepted_at?: string | null;
           created_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "invites_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       leads: {
         Row: {
@@ -139,7 +161,15 @@ export type Database = {
           owner_id?: string | null;
           created_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "leads_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       deals: {
         Row: {
@@ -183,7 +213,22 @@ export type Database = {
           closed_at?: string | null;
           created_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "deals_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "deals_lead_id_fkey";
+            columns: ["lead_id"];
+            isOneToOne: false;
+            referencedRelation: "leads";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       activities: {
         Row: {
@@ -219,7 +264,29 @@ export type Database = {
           occurred_at?: string;
           created_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "activities_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "activities_lead_id_fkey";
+            columns: ["lead_id"];
+            isOneToOne: false;
+            referencedRelation: "leads";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "activities_deal_id_fkey";
+            columns: ["deal_id"];
+            isOneToOne: false;
+            referencedRelation: "deals";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       subscriptions: {
         Row: {
@@ -243,11 +310,32 @@ export type Database = {
           status?: string | null;
           current_period_end?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: true;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    Functions: {
+      is_workspace_member: {
+        Args: { ws: string };
+        Returns: boolean;
+      };
+      is_workspace_admin: {
+        Args: { ws: string };
+        Returns: boolean;
+      };
+      create_workspace_with_owner: {
+        Args: { workspace_name: string; workspace_slug: string };
+        Returns: Database["public"]["Tables"]["workspaces"]["Row"];
+      };
+    };
     Enums: {
       member_role: "admin" | "member";
       plan: "free" | "pro";
