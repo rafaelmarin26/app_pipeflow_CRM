@@ -141,6 +141,7 @@ export const mockInvites: Invite[] = [
     expires_at: "2026-09-19T12:00:00.000Z",
     accepted_at: null,
     created_at: "2026-09-09T12:00:00.000Z",
+    invited_by: userId(1),
   },
 ];
 

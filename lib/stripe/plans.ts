@@ -18,6 +18,17 @@ export const FREE_LIMITS = {
   leads: 50,
 } as const;
 
+/**
+ * Whether inviting one more person would break the Free ceiling. Pulled
+ * forward from M16 into M15's `inviteMember` action — counting rows needs no
+ * Stripe wiring, only the plan already sitting on `workspaces.plan`. `count`
+ * is members plus invites still pending, so five invites sent at once cannot
+ * out-run two accepts.
+ */
+export function isMemberLimitReached(plan: Plan, count: number): boolean {
+  return plan === "free" && count >= FREE_LIMITS.members;
+}
+
 export const PRO_PRICE_CENTS = 4_900;
 
 export type PlanOffer = {

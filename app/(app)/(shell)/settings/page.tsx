@@ -1,24 +1,13 @@
-import type { Metadata } from "next";
-import { Settings } from "lucide-react";
+import { redirect } from "next/navigation";
 
-import { EmptyState } from "@/components/shared/empty-state";
-import { PageHeader } from "@/components/shared/page-header";
+import { createClient } from "@/lib/supabase/server";
+import { requireWorkspaceContext } from "@/lib/workspace";
 
-export const metadata: Metadata = { title: "Configurações" };
+/** `/settings` has no content of its own — it lands on the first tab the role can see. */
+export default async function SettingsIndexPage() {
+  const supabase = await createClient();
+  const context = await requireWorkspaceContext(supabase);
+  if (!context) redirect("/login");
 
-export default function SettingsPage() {
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Configurações"
-        description="Dados do workspace, colaboradores e plano de assinatura."
-      />
-
-      <EmptyState
-        icon={Settings}
-        title="Nenhuma configuração disponível ainda."
-        description="As abas de workspace, membros e plano são construídas nesta tela."
-      />
-    </div>
-  );
+  redirect(context.role === "admin" ? "/settings/workspace" : "/settings/members");
 }

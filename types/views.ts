@@ -1,4 +1,4 @@
-import type { Activity, Deal, Lead } from "@/types/database";
+import type { Activity, Deal, Invite, Lead, MemberRole } from "@/types/database";
 
 /**
  * Row shapes the screens consume — a table row plus the rows it was joined to.
@@ -33,3 +33,17 @@ export type ActivityWithAuthor = Activity & { author: Person | null };
 export type DealCardData = DealWithOwner & {
   lead: Pick<Lead, "id" | "name" | "company"> | null;
 };
+
+/**
+ * A workspace roster row as the Members tab renders it — PLAN.md M15: the
+ * `workspace_members` row plus the profile it points to.
+ */
+export type MemberWithProfile = {
+  user_id: string;
+  role: MemberRole;
+  created_at: string;
+  profile: Person;
+};
+
+/** A pending invite plus who sent it, for the Members tab's pending list. */
+export type InviteWithInviter = Invite & { inviter: Person | null };

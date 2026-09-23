@@ -2,7 +2,11 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 import type { ShellUser } from "@/components/layout/nav-items";
+import { slugify } from "@/lib/utils";
 import type { Database, MemberRole, Workspace } from "@/types/database";
+
+const POSTGRES_UNIQUE_VIOLATION = "23505";
+const MAX_SLUG_ATTEMPTS = 5;
 
 /**
  * Cookie that remembers the workspace the user picked in the switcher. M15
@@ -177,4 +181,39 @@ export async function requireWorkspaceContext(
   if (!active) return null;
 
   return { user, workspace: active.workspace, role: active.role };
+}
+
+/**
+ * Creates a workspace and its founding admin membership through
+ * `create_workspace_with_owner()` (M10) — the only path onto that first
+ * `workspace_members` row, since the insert policy requires the caller to
+ * already belong to the workspace. Shared by the M11 onboarding action and
+ * the M15 "criar outro workspace" action in the switcher, so the slug-retry
+ * loop is written once.
+ */
+export async function createWorkspaceWithOwner(
+  supabase: SupabaseClient<Database>,
+  name: string,
+): Promise<{ workspace: Workspace } | { error: string }> {
+  const baseSlug = slugify(name) || "workspace";
+
+  // The slug is derived from the name and the column is unique, so two
+  // workspaces named the same thing need a fallback rather than a raw
+  // constraint error.
+  for (let attempt = 0; attempt < MAX_SLUG_ATTEMPTS; attempt++) {
+    const slug = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`;
+
+    const { data: workspace, error } = await supabase.rpc("create_workspace_with_owner", {
+      workspace_name: name,
+      workspace_slug: slug,
+    });
+
+    if (!error && workspace) return { workspace };
+
+    if (error && error.code !== POSTGRES_UNIQUE_VIOLATION) {
+      return { error: "Não foi possível criar o workspace. Tente novamente." };
+    }
+  }
+
+  return { error: "Já existe um workspace com um endereço parecido. Tente outro nome." };
 }

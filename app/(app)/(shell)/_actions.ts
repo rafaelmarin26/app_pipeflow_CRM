@@ -3,7 +3,13 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
-import { getUserMemberships, setActiveWorkspaceCookie } from "@/lib/workspace";
+import { workspaceSchema, type WorkspaceInput } from "@/lib/validations/workspace";
+import {
+  createWorkspaceWithOwner,
+  getUserMemberships,
+  setActiveWorkspaceCookie,
+} from "@/lib/workspace";
+import type { Workspace } from "@/types/database";
 
 /** Ends the session and sends the user back to the login screen — PLAN.md M11. */
 export async function signOut(): Promise<void> {
@@ -39,4 +45,34 @@ export async function switchWorkspace(
   }
 
   await setActiveWorkspaceCookie(workspaceId);
+}
+
+/**
+ * "Criar outro workspace" from the switcher — PLAN.md M15. Same
+ * `create_workspace_with_owner()` path as onboarding, via the shared
+ * `createWorkspaceWithOwner()` helper; the new workspace becomes active right
+ * away so the caller's `router.refresh()` shows it without a second click.
+ */
+export async function createWorkspaceFromSwitcher(
+  values: WorkspaceInput,
+): Promise<{ error: string } | { workspace: Workspace }> {
+  const parsed = workspaceSchema.safeParse(values);
+  if (!parsed.success) {
+    return { error: "Dê um nome ao seu workspace." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const result = await createWorkspaceWithOwner(supabase, parsed.data.name);
+  if ("error" in result) return result;
+
+  await setActiveWorkspaceCookie(result.workspace.id);
+  return { workspace: result.workspace };
 }

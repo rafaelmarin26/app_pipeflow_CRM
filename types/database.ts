@@ -100,16 +100,18 @@ export type Database = {
           expires_at: string;
           accepted_at: string | null;
           created_at: string;
+          invited_by: string | null;
         };
         Insert: {
           id?: string;
           workspace_id: string;
           email: string;
           role?: Database["public"]["Enums"]["member_role"];
-          token: string;
+          token?: string;
           expires_at: string;
           accepted_at?: string | null;
           created_at?: string;
+          invited_by?: string | null;
         };
         Update: {
           id?: string;
@@ -120,6 +122,7 @@ export type Database = {
           expires_at?: string;
           accepted_at?: string | null;
           created_at?: string;
+          invited_by?: string | null;
         };
         Relationships: [
           {
@@ -127,6 +130,13 @@ export type Database = {
             columns: ["workspace_id"];
             isOneToOne: false;
             referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "invites_invited_by_fkey";
+            columns: ["invited_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
         ];

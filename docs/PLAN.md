@@ -318,19 +318,29 @@ Conferir os 4 números à mão contra o mock; gráfico responsivo sem estourar o
 
 ### Entregas
 
-- [ ] Layout de settings com abas: Workspace, Membros, Plano
-- [ ] **Workspace:** nome, slug e zona de perigo (excluir), visível apenas para Admin
-- [ ] **Membros:** tabela com avatar, nome, e-mail, papel e data de entrada
-- [ ] Dialog de convite: e-mail e seleção de papel
-- [ ] Convites pendentes listados com opção de reenviar e cancelar
-- [ ] Ações de Admin escondidas quando o mock simula papel Membro
-- [ ] **Plano:** card do plano atual, uso (`X de 50 leads`, `Y de 2 colaboradores`) com barra de progresso
-- [ ] Comparativo Free × Pro e botão de upgrade (inerte por ora)
-- [ ] Aviso de limite atingido, com o tom de voz do CLAUDE.md §7
+- [x] Layout de settings com abas: Workspace, Membros, Plano
+- [x] **Workspace:** nome, slug e zona de perigo (excluir), visível apenas para Admin
+- [x] **Membros:** tabela com avatar, nome, e-mail, papel e data de entrada
+- [x] Dialog de convite: e-mail e seleção de papel
+- [x] Convites pendentes listados com opção de reenviar e cancelar
+- [x] Ações de Admin escondidas quando o usuário logado tem papel Membro
+- [x] **Plano:** card do plano atual, uso (`X de 50 leads`, `Y de 2 colaboradores`) com barra de progresso
+- [x] Comparativo Free × Pro e botão de upgrade (inerte por ora)
+- [x] Aviso de limite atingido, com o tom de voz do CLAUDE.md §7
+
+> **Feito direto com dados reais, fora de ordem com a Fase 2.** O backend das três abas
+> (schema, RLS, auth) já existia desde o M10-M14; construir a UI sobre `lib/mock-data.ts` só
+> para trocá-la de novo no M15 teria sido trabalho duplicado. As três páginas
+> (`settings/workspace`, `settings/members`, `settings/billing`) chamam `requireWorkspaceContext`
+> e consultam o Postgres diretamente, e o M15 entrou na mesma leva — ver as entregas dele
+> abaixo. (2) "Ações de Admin escondidas" testado contra o papel real do usuário autenticado,
+> não contra um mock alternável — a Fase 2 nunca chegou a existir para esta tela.
 
 ### Validação
 
-Alternar o papel no mock e confirmar que a UI de Admin desaparece; barras de uso refletem os números do mock.
+Trocar de conta entre um Admin e um Membro do mesmo workspace e confirmar que a UI de Admin
+desaparece para o Membro; as barras de uso refletem `count()` reais de `leads` e
+`workspace_members`.
 
 **Commit final:** `feat: add workspace, members and billing settings screens`
 
@@ -590,20 +600,56 @@ ainda) e bateram com o que a tela mostrou.
 
 ### Entregas
 
-- [ ] Resend configurado em `lib/email/resend.ts`
-- [ ] Template de convite em PT-BR, com a identidade visual do produto
-- [ ] Server Action de convidar: gera token, grava `invites` e dispara o e-mail
-- [ ] Aceite do convite cria o vínculo e consome o token, com expiração e reuso tratados
-- [ ] Reenviar e cancelar convite pendente
-- [ ] Remover membro e alterar papel, restritos a Admin **no servidor**
-- [ ] Último Admin não pode se rebaixar nem sair do workspace
-- [ ] Workspace switcher trocando de contexto de verdade, com a escolha persistida
-- [ ] Criar workspace adicional a partir do switcher
-- [ ] Papel do usuário propagado pelo layout e usado para esconder ações de Admin
+- [x] Resend configurado em `lib/email/resend.ts`
+- [x] Template de convite em PT-BR, com a identidade visual do produto
+- [x] Server Action de convidar: gera token, grava `invites` e dispara o e-mail
+- [x] Aceite do convite cria o vínculo e consome o token, com expiração e reuso tratados
+- [x] Reenviar e cancelar convite pendente
+- [x] Remover membro e alterar papel, restritos a Admin **no servidor**
+- [x] Último Admin não pode se rebaixar nem sair do workspace
+- [x] Workspace switcher trocando de contexto de verdade, com a escolha persistida
+- [x] Criar workspace adicional a partir do switcher
+- [x] Papel do usuário propagado pelo layout e usado para esconder ações de Admin
+
+> **Desvios registrados.** (1) **Sem tabela nova.** O pedido de implementação chamava a tabela
+> de `workspace_invites`, mas o M10 já tinha criado `invites` com exatamente essa forma — RLS,
+> índices e as policies do CLAUDE.md §5. Uma segunda tabela para o mesmo papel teria divergido
+> do modelo de dados fixado no CLAUDE.md §4; a única mudança de schema desta leva foi somar a
+> coluna `invited_by` a `invites` (migration `20260922060000`), para a tela de aceite mostrar
+> quem convidou — o M10 nunca guardou isso. (2) **Limite de 2 colaboradores adiantado do M16.**
+> `isMemberLimitReached()` (`lib/stripe/plans.ts`) conta membros mais convites pendentes e
+> bloqueia `inviteMember` no plano Grátis; não precisa do Stripe, só de um `count()`, então
+> entrou nesta leva por pedido explícito em vez de esperar o M16. O teto de 50 leads continua
+> fora de escopo aqui. (3) **Aceite sem `?next=` pelo login/signup.** A tela pública
+> `convite/[token]` não encadeia o token pelos Server Actions de `/login` e `/signup` — mexer
+> nelas é território do M11. Um visitante sem sessão vê CTAs para entrar ou criar conta e uma
+> instrução em PT-BR para voltar ao mesmo link depois. (4) **E-mail do inviter vem de
+> `user.user_metadata.name`**, o mesmo campo que `toShellUser()` já usa em `lib/workspace.ts`,
+> não de uma nova consulta a `profiles`. (5) **"Sair do workspace"** não estava listado, mas o
+> próprio texto da entrega ("nem sair do workspace") pressupõe a ação existir; toda linha da
+> tabela de membros mostra esse botão na própria linha do usuário logado, com o mesmo guard de
+> "último Admin" que bloqueia a autodemoção.
+>
+> **Migration pendente de aplicar manualmente.** Sem Docker nem `supabase` autenticado neste
+> ambiente (mesma limitação relatada no M10/M11), a migration `20260922060000_add_invited_by_to_invites.sql`
+> não pôde ser aplicada ao projeto remoto por mim. Rodar no SQL Editor do Studio antes de testar
+> convites de ponta a ponta:
+> ```sql
+> alter table public.invites
+>   add column invited_by uuid references public.profiles (id) on delete set null;
+> ```
+> Até lá, a tela de aceite falha a leitura do convite sem erro (mostra "Convite inválido"), e a
+> aba Membros/convite de novo colaborador retornam erro do Postgres traduzido.
 
 ### Validação
 
 Convidar um segundo e-mail, aceitar em outra sessão e confirmar o papel correto. Como Membro, chamar a action de remover membro direto e receber negativa do servidor.
+
+Verificado nesta leva: `npx tsc --noEmit` e `npm run lint` limpos; `npm run dev` sobe sem erro
+e as rotas novas/alteradas (`/convite/[token]`, as três abas de `/settings`) compilam e
+respondem sem 500 — as protegidas redirecionam para `/login` como esperado. O fluxo completo
+de convite (envio → e-mail → aceite → papel aplicado) não foi exercitado contra o banco real
+nesta leva por causa da migration pendente acima.
 
 **Commit final:** `feat: add email invites, member roles and workspace switching`
 
