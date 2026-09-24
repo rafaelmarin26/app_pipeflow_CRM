@@ -3,15 +3,15 @@
 import { useTransition } from "react";
 import { toast } from "sonner";
 
-import { createCheckoutSession } from "@/app/(app)/(shell)/settings/billing/_actions";
+import { createPortalSession } from "@/app/(app)/(shell)/settings/billing/_actions";
 import { Button } from "@/components/ui/button";
 
-export function UpgradeButton({ label }: { label: string }) {
+export function ManageSubscriptionButton() {
   const [pending, startTransition] = useTransition();
 
   function handleClick() {
     startTransition(async () => {
-      const result = await createCheckoutSession();
+      const result = await createPortalSession();
 
       if ("error" in result) {
         toast.error(result.error);
@@ -23,8 +23,8 @@ export function UpgradeButton({ label }: { label: string }) {
   }
 
   return (
-    <Button className="w-full" disabled={pending} onClick={handleClick}>
-      {pending ? "Abrindo pagamento…" : label}
+    <Button variant="outline" disabled={pending} onClick={handleClick}>
+      {pending ? "Abrindo portal…" : "Gerenciar assinatura"}
     </Button>
   );
 }

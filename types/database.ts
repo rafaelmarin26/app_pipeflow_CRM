@@ -382,6 +382,24 @@ export type Database = {
           },
         ];
       };
+      stripe_events: {
+        Row: {
+          event_id: string;
+          type: string;
+          processed_at: string;
+        };
+        Insert: {
+          event_id: string;
+          type: string;
+          processed_at?: string;
+        };
+        Update: {
+          event_id?: string;
+          type?: string;
+          processed_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
     Functions: {

@@ -661,22 +661,60 @@ nesta leva por causa da migration pendente acima.
 
 ### Entregas
 
-- [ ] Produto e preço Pro de R$ 49/mês criados no Stripe
-- [ ] `lib/stripe/plans.ts` com os limites do Free — fonte única de verdade
-- [ ] Server Action criando a sessão de Stripe Checkout, com `workspace_id` nos metadados
-- [ ] Route Handler do webhook com `constructEvent` validando a assinatura
-- [ ] Webhook idempotente: `event.id` registrado e repetição ignorada
-- [ ] Eventos tratados: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
-- [ ] Tabela `subscriptions` como única fonte do estado do plano
-- [ ] Customer Portal para gerenciar e cancelar assinatura
-- [ ] Limite de 50 leads checado na Server Action de criar lead
-- [ ] Limite de 2 colaboradores checado na Server Action de convidar
-- [ ] Mensagem de limite com caminho claro para o upgrade
-- [ ] Downgrade preserva os dados existentes, apenas bloqueia novos inserts
+- [x] Produto e preço Pro de R$ 49/mês criados no Stripe
+- [x] `lib/stripe/plans.ts` com os limites do Free — fonte única de verdade
+- [x] Server Action criando a sessão de Stripe Checkout, com `workspace_id` nos metadados
+- [x] Route Handler do webhook com `constructEvent` validando a assinatura
+- [x] Webhook idempotente: `event.id` registrado e repetição ignorada
+- [x] Eventos tratados: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
+- [x] Tabela `subscriptions` como única fonte do estado do plano
+- [x] Customer Portal para gerenciar e cancelar assinatura
+- [x] Limite de 50 leads checado na Server Action de criar lead
+- [x] Limite de 2 colaboradores checado na Server Action de convidar
+- [x] Mensagem de limite com caminho claro para o upgrade
+- [x] Downgrade preserva os dados existentes, apenas bloqueia novos inserts
+
+> **Desvios registrados.** (1) **Produto por ID, preço inline.** O produto Pro já existia no
+> Stripe; o Checkout o referencia por `STRIPE_PRODUCT_PRO` (`prod_...`) e recebe o valor de
+> `PRO_PRICE_CENTS` via `price_data`, então o preço cobrado e o exibido na landing vêm da mesma
+> constante. Isso **substitui** `NEXT_PUBLIC_STRIPE_PRICE_PRO` (`price_...`) do CLAUDE.md §6, que
+> saiu do `.env.example` — e por ser só de servidor, não precisa mais do prefixo `NEXT_PUBLIC_`.
+> (2) **`workspaces.plan` continua existindo como espelho.** O CLAUDE.md §5 manda o estado do
+> plano vir de `subscriptions`; como `workspaces.plan` já é lido por switcher, limites e telas, o
+> webhook grava as duas na mesma operação, `subscriptions` como fonte e `plan` derivado dela
+> (`planFromSubscriptionStatus`). `active`, `trialing` e `past_due` mantêm o Pro — `past_due`
+> porque o Stripe ainda está retentando o cartão. (3) **Tabela nova `stripe_events`** para a
+> idempotência: o `event.id` é inserido *antes* de processar (a PK arbitra entregas
+> concorrentes) e a linha é apagada se o processamento falhar, para o Stripe reenviar. (4) **O
+> webhook relê a assinatura no Stripe** em vez de confiar no payload do evento: a entrega não é
+> ordenada, e um `updated` atrasado não pode reativar um Pro já cancelado. (5) **Correção de
+> segurança fora do escopo da lista.** A policy "Admins can update their workspace" filtrava
+> linhas, não colunas: qualquer Admin podia rodar `update workspaces set plan = 'pro'` pelo
+> browser e pular o pagamento. A migration revoga `UPDATE` de `authenticated` em `workspaces` e
+> devolve só a coluna `name`. (6) **Limite de leads sem trava no banco.** O teto de 50 é checado
+> por `count` antes do insert, como o CLAUDE.md §5 pede; duas criações simultâneas no limite
+> podem passar de 50 por uma ou duas linhas. Um trigger fecharia a brecha, mas está fora do que
+> o milestone pede.
+>
+> **Pendente de aplicar e configurar manualmente** (sem Docker nem `supabase` autenticado neste
+> ambiente, mesma limitação do M10/M11/M15):
+> 1. Rodar `supabase/migrations/20260924120000_add_stripe_events_and_lock_plan_column.sql` no
+>    SQL Editor do Studio. Até lá o webhook responde 500 (`claim_failed`) — o Stripe reenvia
+>    depois, nada se perde.
+> 2. `STRIPE_WEBHOOK_SECRET` no `.env.local`: rodar `stripe listen --forward-to
+>    localhost:3000/api/stripe/webhook` e copiar o `whsec_...` que ele imprime.
+> 3. Salvar uma vez a configuração do Customer Portal em *Stripe Dashboard › Settings ›
+>    Billing › Customer portal* (modo teste); sem ela, "Gerenciar assinatura" falha.
 
 ### Validação
 
 Checkout com o cartão de teste 4242 4242 4242 4242 libera o Pro. Reenviar o mesmo evento pelo Stripe CLI não duplica nada. No Free com 50 leads, o 51º é recusado pelo servidor.
+
+Verificado nesta leva: `npx tsc --noEmit` e `npm run lint` limpos. O webhook, exercitado num
+servidor local com segredos de teste, responde 400 sem assinatura e com assinatura inválida, e uma
+assinatura válida passa da verificação e chega ao registro do `event.id`. **Não exercitados**
+(dependem dos itens pendentes acima): o checkout com o cartão 4242, o reenvio do mesmo evento e o
+51º lead recusado.
 
 **Commit final:** `feat: add stripe checkout, webhook handling and plan limits`
 

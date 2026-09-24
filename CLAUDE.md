@@ -196,7 +196,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY      # idem
 SUPABASE_SERVICE_ROLE_KEY          # idem — servidor apenas
 STRIPE_SECRET_KEY                  # Stripe > Developers > API keys
 STRIPE_WEBHOOK_SECRET              # Stripe CLI ou endpoint do dashboard
-NEXT_PUBLIC_STRIPE_PRICE_PRO       # price_... do plano Pro
+STRIPE_PRODUCT_PRO                 # prod_... do plano Pro — servidor apenas; o valor mensal vem de PRO_PRICE_CENTS
 RESEND_API_KEY                     # Resend > API Keys
 NEXT_PUBLIC_APP_URL                # http://localhost:3000 em dev
 ```

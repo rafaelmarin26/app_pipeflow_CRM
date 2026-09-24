@@ -1,12 +1,13 @@
 import { Check } from "lucide-react";
 
+import { ManageSubscriptionButton } from "@/components/settings/manage-subscription-button";
 import { UpgradeButton } from "@/components/settings/upgrade-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { PLAN_LABELS } from "@/lib/labels";
 import { FREE_LIMITS, PLAN_OFFERS } from "@/lib/stripe/plans";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import type { Plan } from "@/types/database";
 
 function UsageBar({
@@ -33,21 +34,28 @@ function UsageBar({
   );
 }
 
+export type SubscriptionSummary = {
+  status: string | null;
+  currentPeriodEnd: string | null;
+};
+
 /**
- * Plan tab — PLAN.md M9. Reads usage against `lib/stripe/plans.ts`, the same
- * file M16's Server Actions check against, so the bar and the eventual
- * server-side block can never disagree about the ceiling.
+ * Plan tab — PLAN.md M9/M16. Reads usage against `lib/stripe/plans.ts`, the
+ * same file the Server Actions check against, so the bar and the server-side
+ * block can never disagree about the ceiling.
  */
 export function PlanOverview({
   plan,
   leadsCount,
   membersCount,
   isAdmin,
+  subscription,
 }: {
   plan: Plan;
   leadsCount: number;
   membersCount: number;
   isAdmin: boolean;
+  subscription: SubscriptionSummary | null;
 }) {
   const isFree = plan === "free";
 
@@ -78,7 +86,27 @@ export function PlanOverview({
               </p>
             ) : null}
           </CardContent>
-        ) : null}
+        ) : (
+          <CardContent className="space-y-3">
+            {subscription?.status === "past_due" ? (
+              <p className="rounded-md border border-warm/30 bg-warm/10 px-3 py-2 text-sm text-warm">
+                Não conseguimos cobrar a última fatura. Atualize o cartão para manter o Pro.
+              </p>
+            ) : null}
+
+            {subscription?.currentPeriodEnd ? (
+              <p className="text-sm text-muted-foreground">
+                Próxima renovação em{" "}
+                <span className="money text-foreground">
+                  {formatDate(subscription.currentPeriodEnd)}
+                </span>
+                .
+              </p>
+            ) : null}
+
+            {isAdmin ? <ManageSubscriptionButton /> : null}
+          </CardContent>
+        )}
       </Card>
 
       {isAdmin && isFree ? (
