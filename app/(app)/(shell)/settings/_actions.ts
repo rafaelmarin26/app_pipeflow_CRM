@@ -112,8 +112,8 @@ export async function deleteWorkspace(): Promise<{ error: string } | void> {
 }
 
 /**
- * Members tab: invite. The Free ceiling check is M16's on paper, but it only
- * needs a row count — no Stripe wiring — so it lands here instead of waiting.
+ * Members tab: invite. Counts members plus pending invites against the Free
+ * ceiling before inserting — CLAUDE.md §5.
  */
 export async function inviteMember(
   values: InviteInput,
@@ -133,7 +133,7 @@ export async function inviteMember(
   if (isMemberLimitReached(workspace.plan, count)) {
     return {
       error:
-        "O plano Grátis permite até 2 colaboradores. Faça upgrade para o Pro para convidar mais gente.",
+        "O plano Grátis permite até 2 colaboradores. Faça upgrade para o Pro em Configurações › Plano para convidar mais gente.",
     };
   }
 

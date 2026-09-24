@@ -29,6 +29,28 @@ export function isMemberLimitReached(plan: Plan, count: number): boolean {
   return plan === "free" && count >= FREE_LIMITS.members;
 }
 
+/**
+ * Whether one more lead would break the Free ceiling. A downgraded workspace
+ * that already holds more than the ceiling keeps every row — this only blocks
+ * the next insert.
+ */
+export function isLeadLimitReached(plan: Plan, count: number): boolean {
+  return plan === "free" && count >= FREE_LIMITS.leads;
+}
+
+/**
+ * Stripe subscription statuses that keep a workspace on Pro. `past_due` stays
+ * in on purpose: Stripe retries the card for days, and cutting the workspace
+ * off on the first failed charge would punish a customer whose card simply
+ * expired. If the retries run out Stripe moves the subscription to `canceled`
+ * or `unpaid`, and the workspace falls back to Free then.
+ */
+const PRO_STATUSES = new Set(["active", "trialing", "past_due"]);
+
+export function planFromSubscriptionStatus(status: string | null): Plan {
+  return status !== null && PRO_STATUSES.has(status) ? "pro" : "free";
+}
+
 export const PRO_PRICE_CENTS = 4_900;
 
 export type PlanOffer = {
