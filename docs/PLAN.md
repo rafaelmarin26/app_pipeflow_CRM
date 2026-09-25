@@ -666,7 +666,7 @@ nesta leva por causa da migration pendente acima.
 - [x] Server Action criando a sessão de Stripe Checkout, com `workspace_id` nos metadados
 - [x] Route Handler do webhook com `constructEvent` validando a assinatura
 - [x] Webhook idempotente: `event.id` registrado e repetição ignorada
-- [x] Eventos tratados: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
+- [x] Eventos tratados: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`
 - [x] Tabela `subscriptions` como única fonte do estado do plano
 - [x] Customer Portal para gerenciar e cancelar assinatura
 - [x] Limite de 50 leads checado na Server Action de criar lead
@@ -696,15 +696,20 @@ nesta leva por causa da migration pendente acima.
 > podem passar de 50 por uma ou duas linhas. Um trigger fecharia a brecha, mas está fora do que
 > o milestone pede.
 >
-> **Pendente de aplicar e configurar manualmente** (sem Docker nem `supabase` autenticado neste
-> ambiente, mesma limitação do M10/M11/M15):
-> 1. Rodar `supabase/migrations/20260924120000_add_stripe_events_and_lock_plan_column.sql` no
->    SQL Editor do Studio. Até lá o webhook responde 500 (`claim_failed`) — o Stripe reenvia
->    depois, nada se perde.
-> 2. `STRIPE_WEBHOOK_SECRET` no `.env.local`: rodar `stripe listen --forward-to
->    localhost:3000/api/stripe/webhook` e copiar o `whsec_...` que ele imprime.
-> 3. Salvar uma vez a configuração do Customer Portal em *Stripe Dashboard › Settings ›
->    Billing › Customer portal* (modo teste); sem ela, "Gerenciar assinatura" falha.
+> **Limites em `lib/limits.ts`.** `canAddLead()` e `canAddMember()` concentram a checagem do teto do
+> Free (antes espalhada nas actions) e devolvem `{ allowed, used, limit, message }` com a mensagem
+> em PT-BR. `createLead` e `inviteMember` chamam essas funções; `/leads` e `/settings/members`
+> mostram um aviso (`LimitNotice`) ao atingir o teto. A checagem continua sendo contar e depois
+> inserir, então duas criações simultâneas no limite ainda podem passar do teto.
+>
+> **Estado de configuração.** As duas migrations (`20260924120000` e `20260924130000`) foram
+> aplicadas no projeto remoto e conferidas ao vivo: idempotência do `event_id` (o duplicado volta
+> `23505`), `anon` sem leitura nem escrita em `stripe_events`, e um Admin não consegue mais
+> `update workspaces set plan = 'pro'`, mas segue renomeando o workspace. `STRIPE_WEBHOOK_SECRET`
+> vem de `stripe listen --print-secret`; o encaminhamento local roda com `npm run stripe:listen`.
+>
+> **Ainda pendente:** salvar uma vez a configuração do Customer Portal em *Stripe Dashboard ›
+> Settings › Billing › Customer portal* (modo teste); sem ela, "Gerenciar assinatura" falha.
 
 ### Validação
 

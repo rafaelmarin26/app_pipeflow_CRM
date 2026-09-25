@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { LimitNotice } from "@/components/shared/limit-notice";
 import { MembersTable } from "@/components/settings/members-table";
 import { PendingInvites } from "@/components/settings/pending-invites";
+import { canAddMember } from "@/lib/limits";
 import { createClient } from "@/lib/supabase/server";
 import { requireWorkspaceContext } from "@/lib/workspace";
 import type { InviteWithInviter, MemberWithProfile, Person } from "@/types/views";
@@ -22,7 +24,7 @@ export default async function MembersSettingsPage() {
   const { workspace, role, user } = context;
   const isAdmin = role === "admin";
 
-  const [{ data: roster }, { data: invites }] = await Promise.all([
+  const [{ data: roster }, { data: invites }, memberLimit] = await Promise.all([
     supabase
       .from("workspace_members")
       .select("user_id, role, created_at, profile:profiles(id, name, email, avatar_url)")
@@ -36,6 +38,8 @@ export default async function MembersSettingsPage() {
           .is("accepted_at", null)
           .order("created_at", { ascending: false })
       : Promise.resolve({ data: null }),
+    // Only an Admin can invite, so only an Admin needs to hear the seats ran out.
+    isAdmin ? canAddMember(supabase, workspace) : Promise.resolve(null),
   ]);
 
   const members: MemberWithProfile[] = (roster ?? [])
@@ -49,6 +53,10 @@ export default async function MembersSettingsPage() {
 
   return (
     <div className="space-y-6">
+      {memberLimit && memberLimit.limit !== null && !memberLimit.allowed ? (
+        <LimitNotice resource="colaboradores" limit={memberLimit.limit} isAdmin />
+      ) : null}
+
       <MembersTable
         members={members}
         currentUserId={user.id}

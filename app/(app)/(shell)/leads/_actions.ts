@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-import { FREE_LIMITS, isLeadLimitReached } from "@/lib/stripe/plans";
+import { canAddLead } from "@/lib/limits";
 import { createClient } from "@/lib/supabase/server";
 import { translateDatabaseError } from "@/lib/supabase/errors";
 import {
@@ -47,17 +47,8 @@ export async function createLead(
 
   // The Free ceiling (CLAUDE.md §5) is checked here, before the insert, so the
   // UI can never be the only thing standing between a workspace and lead 51.
-  // Existing rows are untouched on a downgrade — this only refuses new ones.
-  const { count } = await supabase
-    .from("leads")
-    .select("id", { count: "exact", head: true })
-    .eq("workspace_id", workspace.id);
-
-  if (isLeadLimitReached(workspace.plan, count ?? 0)) {
-    return {
-      error: `O plano Grátis permite até ${FREE_LIMITS.leads} leads. Faça upgrade para o Pro em Configurações › Plano para cadastrar mais.`,
-    };
-  }
+  const limit = await canAddLead(supabase, workspace);
+  if (!limit.allowed) return { error: limit.message! };
 
   const { data, error } = await supabase
     .from("leads")
