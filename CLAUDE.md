@@ -59,7 +59,7 @@ app/
         workspace/  members/  billing/
     onboarding/             #   criar primeiro workspace — sem sidebar
   api/
-    stripe/webhook/route.ts #   assinatura verificada, idempotente
+    webhooks/stripe/route.ts #  assinatura verificada, idempotente
 components/
   ui/                       # shadcn — regenerar via CLI, não editar à mão
   leads/  pipeline/  dashboard/  layout/  marketing/
@@ -376,7 +376,7 @@ npx supabase migration new <name>
 npx supabase db reset        # reaplica migrations + seed
 npx supabase gen types typescript --local > types/database.ts
 
-stripe listen --forward-to localhost:3000/api/stripe/webhook
+npm run stripe:listen        # stripe listen --events <os 4 eventos tratados> --forward-to localhost:3000/api/webhooks/stripe
 npx shadcn@latest add <component>
 ```
 

@@ -77,9 +77,9 @@ export async function createCheckoutSession(): Promise<{ error: string } | { url
         },
       ],
       client_reference_id: workspace.id,
-      metadata: { workspace_id: workspace.id },
+      metadata: { workspace_id: workspace.id, user_id: user.id },
       // The webhook reads the workspace off the subscription, not the session.
-      subscription_data: { metadata: { workspace_id: workspace.id } },
+      subscription_data: { metadata: { workspace_id: workspace.id, user_id: user.id } },
       ...(existing?.stripe_customer_id
         ? { customer: existing.stripe_customer_id }
         : { customer_email: user.email }),

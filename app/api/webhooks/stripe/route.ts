@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
+import { z } from "zod";
 
 import { getStripe } from "@/lib/stripe/client";
 import { syncSubscription } from "@/lib/stripe/sync";
@@ -9,21 +10,63 @@ export const runtime = "nodejs";
 
 const POSTGRES_UNIQUE_VIOLATION = "23505";
 
+/** Written by `createCheckoutSession` onto the session and the subscription. */
+const metadataSchema = z.object({
+  workspace_id: z.uuid(),
+  user_id: z.uuid().optional(),
+});
+
+function idOf(value: string | { id: string } | null | undefined): string | null {
+  if (!value) return null;
+  return typeof value === "string" ? value : value.id;
+}
+
+/**
+ * The subscription an event is about, or null for events that carry none.
+ * Every handled event funnels into the same "re-read the subscription and sync
+ * it" path, so a new event type only needs a case here.
+ *
+ * `invoice.payment_failed` needs no handler of its own: the subscription's live
+ * status (`past_due` while Stripe retries the card) is what `syncSubscription`
+ * records, and `planFromSubscriptionStatus` keeps a `past_due` workspace on Pro.
+ */
 function subscriptionIdOf(event: Stripe.Event): string | null {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object;
-      if (session.mode !== "subscription" || !session.subscription) return null;
-      return typeof session.subscription === "string"
-        ? session.subscription
-        : session.subscription.id;
+      return session.mode === "subscription" ? idOf(session.subscription) : null;
     }
+    case "invoice.payment_failed":
+      return idOf(event.data.object.parent?.subscription_details?.subscription);
     case "customer.subscription.updated":
     case "customer.subscription.deleted":
       return event.data.object.id;
     default:
       return null;
   }
+}
+
+/**
+ * Records which workspace an event touched and who started the checkout, from
+ * the metadata on the subscription. Missing or malformed metadata (a
+ * subscription created outside the app) is skipped, not an error.
+ */
+async function recordAudit(
+  service: ReturnType<typeof createServiceRoleClient>,
+  eventId: string,
+  metadata: Stripe.Metadata,
+) {
+  const parsed = metadataSchema.safeParse(metadata);
+  if (!parsed.success) return;
+
+  await service
+    .from("stripe_events")
+    .update({
+      workspace_id: parsed.data.workspace_id,
+      user_id: parsed.data.user_id ?? null,
+    })
+    .eq("event_id", eventId)
+    .throwOnError();
 }
 
 /**
@@ -77,6 +120,7 @@ export async function POST(request: Request) {
     if (subscriptionId) {
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       await syncSubscription(service, subscription);
+      await recordAudit(service, event.id, subscription.metadata);
     }
   } catch {
     await service.from("stripe_events").delete().eq("event_id", event.id);
