@@ -387,18 +387,39 @@ export type Database = {
           event_id: string;
           type: string;
           processed_at: string;
+          workspace_id: string | null;
+          user_id: string | null;
         };
         Insert: {
           event_id: string;
           type: string;
           processed_at?: string;
+          workspace_id?: string | null;
+          user_id?: string | null;
         };
         Update: {
           event_id?: string;
           type?: string;
           processed_at?: string;
+          workspace_id?: string | null;
+          user_id?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "stripe_events_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "stripe_events_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: { [_ in never]: never };

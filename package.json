@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "stripe:listen": "stripe listen --events checkout.session.completed,customer.subscription.updated,customer.subscription.deleted,invoice.payment_failed --forward-to localhost:3000/api/webhooks/stripe"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
