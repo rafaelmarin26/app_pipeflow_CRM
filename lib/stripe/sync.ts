@@ -60,6 +60,16 @@ export async function syncSubscription(
   const workspaceId = await resolveWorkspaceId(service, subscription);
   if (!workspaceId) return false;
 
+  // The metadata can name a workspace that has since been deleted. Writing to
+  // it would fail on the foreign key, the webhook would answer 500, and Stripe
+  // would redeliver the same event for days without it ever succeeding.
+  const { data: workspace } = await service
+    .from("workspaces")
+    .select("id")
+    .eq("id", workspaceId)
+    .maybeSingle();
+  if (!workspace) return false;
+
   const { data: existing } = await service
     .from("subscriptions")
     .select("stripe_subscription_id, status")
