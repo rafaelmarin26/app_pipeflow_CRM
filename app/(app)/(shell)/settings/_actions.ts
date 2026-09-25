@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { sendInviteEmail } from "@/lib/email/resend";
-import { isMemberLimitReached } from "@/lib/stripe/plans";
+import { canAddMember } from "@/lib/limits";
 import { createClient } from "@/lib/supabase/server";
 import { translateDatabaseError } from "@/lib/supabase/errors";
 import { inviteSchema, type InviteInput } from "@/lib/validations/invite";
@@ -44,23 +44,6 @@ async function requireAdminContext(): Promise<AdminContext | { error: string }> 
   }
 
   return { supabase, ...context };
-}
-
-async function countRosterAndPending(supabase: Supabase, workspaceId: string) {
-  const [{ count: members }, { count: pending }] = await Promise.all([
-    supabase
-      .from("workspace_members")
-      .select("user_id", { count: "exact", head: true })
-      .eq("workspace_id", workspaceId),
-    supabase
-      .from("invites")
-      .select("id", { count: "exact", head: true })
-      .eq("workspace_id", workspaceId)
-      .is("accepted_at", null)
-      .gt("expires_at", new Date().toISOString()),
-  ]);
-
-  return (members ?? 0) + (pending ?? 0);
 }
 
 /** Workspace tab: rename — CLAUDE.md §5, Admin only, checked on the server. */
@@ -129,13 +112,8 @@ export async function inviteMember(
   const { supabase, workspace, user } = admin;
   const email = parsed.data.email.trim().toLowerCase();
 
-  const count = await countRosterAndPending(supabase, workspace.id);
-  if (isMemberLimitReached(workspace.plan, count)) {
-    return {
-      error:
-        "O plano Grátis permite até 2 colaboradores. Faça upgrade para o Pro em Configurações › Plano para convidar mais gente.",
-    };
-  }
+  const limit = await canAddMember(supabase, workspace);
+  if (!limit.allowed) return { error: limit.message! };
 
   const { data: roster } = await supabase
     .from("workspace_members")

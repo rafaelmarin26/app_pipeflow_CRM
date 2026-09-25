@@ -12,31 +12,14 @@ import type { Plan } from "@/types/database";
  * Money is in integer cents, like everywhere else in the product (§4).
  */
 
-/** Ceilings of the Free plan. Enforced on the server in M16, never only in the UI. */
+/**
+ * Ceilings of the Free plan. Enforced on the server by `canAddLead` and
+ * `canAddMember` in `lib/limits.ts`, never only in the UI.
+ */
 export const FREE_LIMITS = {
   members: 2,
   leads: 50,
 } as const;
-
-/**
- * Whether inviting one more person would break the Free ceiling. Pulled
- * forward from M16 into M15's `inviteMember` action — counting rows needs no
- * Stripe wiring, only the plan already sitting on `workspaces.plan`. `count`
- * is members plus invites still pending, so five invites sent at once cannot
- * out-run two accepts.
- */
-export function isMemberLimitReached(plan: Plan, count: number): boolean {
-  return plan === "free" && count >= FREE_LIMITS.members;
-}
-
-/**
- * Whether one more lead would break the Free ceiling. A downgraded workspace
- * that already holds more than the ceiling keeps every row — this only blocks
- * the next insert.
- */
-export function isLeadLimitReached(plan: Plan, count: number): boolean {
-  return plan === "free" && count >= FREE_LIMITS.leads;
-}
 
 /**
  * Stripe subscription statuses that keep a workspace on Pro. `past_due` stays

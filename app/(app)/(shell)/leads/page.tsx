@@ -8,6 +8,7 @@ import { LeadsPagination } from "@/components/leads/leads-pagination";
 import { LeadsTable } from "@/components/leads/leads-table";
 import { LeadsToolbar } from "@/components/leads/leads-toolbar";
 import { EmptyState } from "@/components/shared/empty-state";
+import { LimitNotice } from "@/components/shared/limit-notice";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +20,7 @@ import {
   periodSinceDays,
   type SearchParams,
 } from "@/lib/leads-filters";
+import { canAddLead } from "@/lib/limits";
 import { createClient } from "@/lib/supabase/server";
 import { requireWorkspaceContext } from "@/lib/workspace";
 import type { LeadWithOwner, Person } from "@/types/views";
@@ -42,13 +44,17 @@ export default async function LeadsPage({
   const context = await requireWorkspaceContext(supabase);
   if (!context) redirect("/login");
   const { workspace } = context;
+  const isAdmin = context.role === "admin";
 
   // The roster doubles as the owner options for the filter bar and the
   // dialog's "Responsável" select — one query, no per-lead lookup.
-  const { data: memberRows } = await supabase
-    .from("workspace_members")
-    .select("profile:user_id(id, name, email, avatar_url)")
-    .eq("workspace_id", workspace.id);
+  const [{ data: memberRows }, leadLimit] = await Promise.all([
+    supabase
+      .from("workspace_members")
+      .select("profile:user_id(id, name, email, avatar_url)")
+      .eq("workspace_id", workspace.id),
+    canAddLead(supabase, workspace),
+  ]);
 
   const owners: Person[] = (memberRows ?? [])
     .map((row) => row.profile)
@@ -126,6 +132,10 @@ export default async function LeadsPage({
           />
         }
       />
+
+      {leadLimit.limit !== null && !leadLimit.allowed ? (
+        <LimitNotice resource="leads" limit={leadLimit.limit} isAdmin={isAdmin} />
+      ) : null}
 
       {workspaceHasLeads ? (
         <div className="space-y-3">
