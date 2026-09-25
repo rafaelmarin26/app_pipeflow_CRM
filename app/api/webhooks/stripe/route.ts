@@ -49,7 +49,12 @@ function subscriptionIdOf(event: Stripe.Event): string | null {
 /**
  * Records which workspace an event touched and who started the checkout, from
  * the metadata on the subscription. Missing or malformed metadata (a
- * subscription created outside the app) is skipped, not an error.
+ * subscription created outside the app) is skipped.
+ *
+ * Best effort on purpose: the event is already processed by the time this runs,
+ * and the ids can point at a workspace or user deleted since — a foreign-key
+ * failure here would turn a handled event into a 500 that Stripe redelivers for
+ * days without ever succeeding. The audit row is worth less than that.
  */
 async function recordAudit(
   service: ReturnType<typeof createServiceRoleClient>,
@@ -65,8 +70,7 @@ async function recordAudit(
       workspace_id: parsed.data.workspace_id,
       user_id: parsed.data.user_id ?? null,
     })
-    .eq("event_id", eventId)
-    .throwOnError();
+    .eq("event_id", eventId);
 }
 
 /**
@@ -119,8 +123,8 @@ export async function POST(request: Request) {
 
     if (subscriptionId) {
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-      await syncSubscription(service, subscription);
-      await recordAudit(service, event.id, subscription.metadata);
+      const synced = await syncSubscription(service, subscription);
+      if (synced) await recordAudit(service, event.id, subscription.metadata);
     }
   } catch {
     await service.from("stripe_events").delete().eq("event_id", event.id);
