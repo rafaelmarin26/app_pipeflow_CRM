@@ -744,9 +744,59 @@ assinatura válida passa da verificação e chega ao registro do `event.id`. **N
 ### Entregas — segurança
 
 - [ ] Auditoria de RLS: cada tabela testada com usuário de outro workspace
-- [ ] Nenhuma chave secreta exposta em variável pública — verificado por busca no bundle
-- [ ] `getSession()` ausente de qualquer caminho de autorização
-- [ ] Rate limit no envio de convites
+- [x] Nenhuma chave secreta exposta em variável pública — verificado por busca no bundle
+- [x] `getSession()` ausente de qualquer caminho de autorização
+- [x] Rate limit no envio de convites
+
+> **Auditoria de segurança pré-deploy (leva `feat/deploy`).** Revisão completa do código contra
+> o CLAUDE.md §5 e o checklist acima, sem acesso a Docker/Supabase local nesta sessão — a
+> auditoria de RLS ficou em leitura estática das 15 migrations (toda tabela com RLS habilitada,
+> toda policy filtrando por `workspace_id` via `is_workspace_member`/`is_workspace_admin`, nenhum
+> `security definer` aberto a `anon`), não em teste ao vivo de dois workspaces, então a caixa
+> continua desmarcada até isso rodar contra o projeto remoto. `getSession()` confirmado ausente
+> por busca; nenhuma das quatro chaves de servidor aparece em `.next/static` do build de produção.
+> Quatro achados corrigidos nesta leva:
+>
+> 1. **Injeção de HTML no e-mail de convite** (`lib/email/resend.ts`). `workspaceName` (nome do
+>    workspace, editável pelo Admin sem restrição de caracteres) e `inviterName` (nome de exibição
+>    do usuário, livre desde o cadastro) iam direto para dentro do HTML do e-mail enviado pelo
+>    Resend a um terceiro. Um Admin mal-intencionado podia injetar markup — por exemplo, um botão
+>    "Aceitar convite" falso apontando para outra URL — num e-mail que sai do domínio do produto.
+>    Corrigido com `escapeHtml()` nos dois campos antes da interpolação.
+> 2. **Sem limite de envio de convites** (`app/(app)/(shell)/settings/_actions.ts`). O teto do
+>    Free (2 colaboradores) já limitava isso indiretamente, mas o Pro não tem teto de membros —
+>    um Admin podia usar a conta Resend do produto para bombardear e-mail em qualquer endereço,
+>    sem limite algum, inclusive contornando qualquer contagem baseada em `invites` com um laço de
+>    criar-cancelar-criar (cancelar apaga a linha). Adicionada a tabela `invite_send_log`
+>    (migration `20260929010000`, append-only, RLS restrita ao Admin do workspace) e
+>    `canSendInvite()`/`logInviteSend()` em `lib/limits.ts`: no máximo 20 envios por workspace a
+>    cada hora, em `inviteMember` e `resendInvite`.
+> 3. **Open redirect em `/callback`** (`app/(auth)/callback/route.ts`). O parâmetro `next` da
+>    query string ia direto para `NextResponse.redirect(`${origin}${next}`)` sem validar que era
+>    um caminho relativo. Um valor como `next=@evil.com` produz `https://app.com@evil.com`, que o
+>    navegador interpreta como host `evil.com` com `app.com` como userinfo — o truque clássico do
+>    "@" para redirect aberto, útil para phishing porque o link começa num domínio confiável.
+>    Corrigido com `safeNextPath()`, que só aceita valores começando com uma única `/`.
+> 4. **Sem headers de segurança** (`next.config.ts`). Nem o Next nem a Vercel adicionam CSP,
+>    `X-Frame-Options` ou `Referrer-Policy` por padrão. Adicionado `headers()` cobrindo todas as
+>    rotas: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
+>    `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` restritiva e uma CSP
+>    (`default-src 'self'`, com `'unsafe-inline'` em script/style enquanto o hydration do Next e os
+>    estilos injetados pelos componentes shadcn/Radix precisarem — migrar para nonce fica para
+>    quando compensar a complexidade). Verificado ao vivo com `curl` contra o dev server: os
+>    headers aparecem na landing, `/login` carrega normalmente e `/dashboard` sem sessão continua
+>    redirecionando.
+>
+> Também adicionado `app/robots.ts` bloqueando `/dashboard`, `/leads`, `/pipeline`, `/settings`,
+> `/onboarding` e `/convite` da indexação — a entrega de polimento que já estava pendente na lista
+> acima. `npx tsc --noEmit`, `npm run lint` e `npm run build` limpos depois de todas as correções.
+>
+> **Fora do escopo desta leva, por decisão explícita.** O `npm audit` aponta uma vulnerabilidade
+> (alta) de `postcss`, vendorizada dentro do próprio `next@15.5.25` — o fix automático sobe para
+> `next@16`, uma mudança maior que o CLAUDE.md §2 pede para não fazer sem decisão registrada, e o
+> `postcss` só processa CSS em build time neste projeto (nenhum CSS de usuário é processado em
+> runtime), então o risco prático é baixo. Fica registrado para quando o Next 15 receber um patch
+> que resolva sem quebrar a versão fixada.
 
 ### Entregas — produção
 

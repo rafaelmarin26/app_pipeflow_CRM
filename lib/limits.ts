@@ -89,3 +89,43 @@ export async function canAddMember(
       : `O plano Grátis permite até ${FREE_LIMITS.members} colaboradores. Faça upgrade para o Pro em Configurações › Plano para convidar mais gente.`,
   };
 }
+
+/** Anti-abuse ceiling on invite e-mails, independent of plan — CLAUDE.md §5. */
+const INVITE_SEND_RATE_LIMIT = { windowMinutes: 60, maxSends: 20 };
+
+/**
+ * Whether the workspace can send one more invite e-mail (a new invite or a
+ * resend) right now. The Free plan's 2-collaborator ceiling already bounds
+ * this, but Pro has no member cap, so without this an Admin could use the
+ * app's Resend account to blast e-mail at arbitrary addresses with no limit —
+ * `invite_send_log` is append-only precisely so cancelling and recreating an
+ * invite cannot reset the count (see the migration's comment).
+ */
+export async function canSendInvite(
+  supabase: Supabase,
+  workspaceId: string,
+): Promise<{ allowed: boolean; message: string | null }> {
+  const since = new Date(
+    Date.now() - INVITE_SEND_RATE_LIMIT.windowMinutes * 60 * 1000,
+  ).toISOString();
+
+  const { count } = await supabase
+    .from("invite_send_log")
+    .select("id", { count: "exact", head: true })
+    .eq("workspace_id", workspaceId)
+    .gt("created_at", since);
+
+  const allowed = (count ?? 0) < INVITE_SEND_RATE_LIMIT.maxSends;
+
+  return {
+    allowed,
+    message: allowed
+      ? null
+      : "Muitos convites enviados nesta última hora. Espere um pouco antes de enviar mais.",
+  };
+}
+
+/** Records one invite send for the rate limit above — call right before actually sending. */
+export async function logInviteSend(supabase: Supabase, workspaceId: string): Promise<void> {
+  await supabase.from("invite_send_log").insert({ workspace_id: workspaceId });
+}

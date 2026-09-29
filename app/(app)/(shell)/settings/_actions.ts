@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { sendInviteEmail } from "@/lib/email/resend";
-import { canAddMember } from "@/lib/limits";
+import { canAddMember, canSendInvite, logInviteSend } from "@/lib/limits";
 import { createClient } from "@/lib/supabase/server";
 import { translateDatabaseError } from "@/lib/supabase/errors";
 import { inviteSchema, type InviteInput } from "@/lib/validations/invite";
@@ -115,6 +115,9 @@ export async function inviteMember(
   const limit = await canAddMember(supabase, workspace);
   if (!limit.allowed) return { error: limit.message! };
 
+  const rateLimit = await canSendInvite(supabase, workspace.id);
+  if (!rateLimit.allowed) return { error: rateLimit.message! };
+
   const { data: roster } = await supabase
     .from("workspace_members")
     .select("profile:profiles(email)")
@@ -163,6 +166,7 @@ export async function inviteMember(
     user.email ||
     "Alguém do time";
 
+  await logInviteSend(supabase, workspace.id);
   const emailSent = await sendInviteEmail({
     to: email,
     workspaceName: workspace.name,
@@ -192,6 +196,9 @@ export async function resendInvite(id: string): Promise<{ error: string } | { em
   if (!invite) return { error: "Convite não encontrado." };
   if (invite.accepted_at) return { error: "Este convite já foi aceito." };
 
+  const rateLimit = await canSendInvite(supabase, workspace.id);
+  if (!rateLimit.allowed) return { error: rateLimit.message! };
+
   const expiresAt = new Date(Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000);
 
   const { error } = await supabase
@@ -206,6 +213,7 @@ export async function resendInvite(id: string): Promise<{ error: string } | { em
     user.email ||
     "Alguém do time";
 
+  await logInviteSend(supabase, workspace.id);
   const emailSent = await sendInviteEmail({
     to: invite.email,
     workspaceName: workspace.name,
