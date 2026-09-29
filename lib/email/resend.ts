@@ -16,6 +16,21 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 const FROM_ADDRESS = "PipeFlow CRM <onboarding@resend.dev>";
 
+/**
+ * `workspaceName` (workspace settings) and `inviterName` (the inviter's
+ * signup display name) are free text with no character restriction — without
+ * this, either one could inject markup into an HTML e-mail sent to a third
+ * party, e.g. a spoofed "Aceitar convite" button pointing at a phishing URL.
+ */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function inviteEmailHtml({
   workspaceName,
   inviterName,
@@ -28,6 +43,8 @@ function inviteEmailHtml({
   acceptUrl: string;
 }): string {
   const roleLabel = MEMBER_ROLE_LABELS[role];
+  const safeWorkspaceName = escapeHtml(workspaceName);
+  const safeInviterName = escapeHtml(inviterName);
 
   return `
 <!doctype html>
@@ -42,7 +59,7 @@ function inviteEmailHtml({
       <tr>
         <td style="background-color:#141416;border:1px solid #2A2A2E;border-radius:8px;padding:32px;">
           <h1 style="margin:0 0 16px;font-size:20px;line-height:1.3;color:#E8E8E8;">
-            ${inviterName} convidou você para o workspace <strong>${workspaceName}</strong>
+            ${safeInviterName} convidou você para o workspace <strong>${safeWorkspaceName}</strong>
           </h1>
           <p style="margin:0 0 24px;font-size:14px;line-height:1.65;color:#8A8A8F;">
             Você vai entrar como <strong style="color:#E8E8E8;">${roleLabel}</strong> no PipeFlow CRM, o pipeline de vendas da equipe.
