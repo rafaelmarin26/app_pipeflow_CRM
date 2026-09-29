@@ -743,19 +743,15 @@ assinatura válida passa da verificação e chega ao registro do `event.id`. **N
 
 ### Entregas — segurança
 
-- [ ] Auditoria de RLS: cada tabela testada com usuário de outro workspace
+- [x] Auditoria de RLS: cada tabela testada com usuário de outro workspace
 - [x] Nenhuma chave secreta exposta em variável pública — verificado por busca no bundle
 - [x] `getSession()` ausente de qualquer caminho de autorização
 - [x] Rate limit no envio de convites
 
 > **Auditoria de segurança pré-deploy (leva `feat/deploy`).** Revisão completa do código contra
-> o CLAUDE.md §5 e o checklist acima, sem acesso a Docker/Supabase local nesta sessão — a
-> auditoria de RLS ficou em leitura estática das 15 migrations (toda tabela com RLS habilitada,
-> toda policy filtrando por `workspace_id` via `is_workspace_member`/`is_workspace_admin`, nenhum
-> `security definer` aberto a `anon`), não em teste ao vivo de dois workspaces, então a caixa
-> continua desmarcada até isso rodar contra o projeto remoto. `getSession()` confirmado ausente
-> por busca; nenhuma das quatro chaves de servidor aparece em `.next/static` do build de produção.
-> Quatro achados corrigidos nesta leva:
+> o CLAUDE.md §5 e o checklist acima. `getSession()` confirmado ausente por busca; nenhuma das
+> quatro chaves de servidor aparece em `.next/static` do build de produção. Quatro achados
+> corrigidos nesta leva:
 >
 > 1. **Injeção de HTML no e-mail de convite** (`lib/email/resend.ts`). `workspaceName` (nome do
 >    workspace, editável pelo Admin sem restrição de caracteres) e `inviterName` (nome de exibição
@@ -790,6 +786,58 @@ assinatura válida passa da verificação e chega ao registro do `event.id`. **N
 > Também adicionado `app/robots.ts` bloqueando `/dashboard`, `/leads`, `/pipeline`, `/settings`,
 > `/onboarding` e `/convite` da indexação — a entrega de polimento que já estava pendente na lista
 > acima. `npx tsc --noEmit`, `npm run lint` e `npm run build` limpos depois de todas as correções.
+>
+> **Isolamento entre workspaces testado ao vivo contra o projeto Supabase remoto**, com Node e a
+> service role key (sem Docker nesta sessão, então sem `supabase start` local — o teste rodou
+> direto contra o projeto real). Um script criou dois usuários e dois workspaces isolados, um lead,
+> um negócio, uma atividade, um convite e uma assinatura "secretos" em cada, e verificou 23
+> condições: (1) `anon` sem sessão nenhuma lê zero linhas em `workspaces`, `workspace_members`,
+> `leads`, `deals`, `activities`, `invites`, `subscriptions` e `profiles` — prova que RLS está
+> *habilitada* nessas 8 tabelas, não só que as policies filtram bem; (2) autenticado como o Admin
+> do workspace A, todo `select` nas mesmas 8 tabelas devolve só linhas do workspace A, inclusive
+> buscar o lead do workspace B pelo `id` direto; (3) `update`/`delete` do workspace A contra uma
+> linha do workspace B afetam zero linhas e o dado original permanece intacto; (4) `insert` de um
+> lead com `workspace_id` do workspace B é recusado (`42501`); (5) a trava de coluna do M16 segue
+> de pé — o próprio Admin do workspace A não consegue `update workspaces set plan = 'pro'`. Os 23
+> testes passaram; dados de teste apagados ao final (o script era descartável, não foi commitado).
+>
+> **Achado nesse teste: a migration `20260929010000_add_invite_send_log.sql` desta leva ainda não
+> está aplicada no projeto remoto** — inserir na tabela devolve `PGRST205` ("table not found in
+> schema cache"), a mesma limitação de ambiente já registrada no M10/M11/M15 (sem Docker nem
+> `supabase` autenticado nesta sessão para rodar `db push`). Isso **não quebra** `inviteMember`
+> nem `resendInvite` — nenhum dos dois lança exceção nem trata o retorno como fatal:
+> `canSendInvite()` lê `count` de um `select({ head: true })` contra uma tabela inexistente, que
+> volta `null` em vez de erro, então `allowed` cai no `true` do `?? 0`; `logInviteSend()` chama
+> `insert()` sem checar `{ error }`, e o client do Supabase nunca lança em erro de query, só
+> devolve no objeto de retorno. Na prática, convites continuam saindo normalmente, só que **sem o
+> novo teto de 20/hora** até a tabela existir — o mesmo "falha aberta" que o webhook do Stripe já
+> usa para o audit trail não-crítico. Ainda assim, **aplicar antes de mesclar o PR**, para o teto
+> valer de fato:
+> ```sql
+> create table public.invite_send_log (
+>   id uuid primary key default gen_random_uuid(),
+>   workspace_id uuid not null references public.workspaces (id) on delete cascade,
+>   created_at timestamptz not null default now()
+> );
+>
+> create index invite_send_log_workspace_id_created_at_idx
+>   on public.invite_send_log (workspace_id, created_at);
+>
+> alter table public.invite_send_log enable row level security;
+>
+> create policy "Admins can view their workspace invite send log"
+>   on public.invite_send_log for select
+>   to authenticated
+>   using (public.is_workspace_admin(workspace_id));
+>
+> create policy "Admins can log invite sends"
+>   on public.invite_send_log for insert
+>   to authenticated
+>   with check (public.is_workspace_admin(workspace_id));
+> ```
+> Confirmado com o mesmo script: `anon` já lê zero linhas de `stripe_events` (RLS habilitada, sem
+> policy nenhuma — nem `anon` nem `authenticated` têm acesso, só a service role) — essa tabela não
+> depende da migration pendente acima.
 >
 > **Fora do escopo desta leva, por decisão explícita.** O `npm audit` aponta uma vulnerabilidade
 > (alta) de `postcss`, vendorizada dentro do próprio `next@15.5.25` — o fix automático sobe para
