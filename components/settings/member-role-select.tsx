@@ -39,7 +39,7 @@ export function MemberRoleSelect({
 
   return (
     <Select value={role} onValueChange={onChange} disabled={isPending}>
-      <SelectTrigger className="h-8 w-32" aria-label="Papel">
+      <SelectTrigger className="h-8 w-28 sm:w-32" aria-label="Papel">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

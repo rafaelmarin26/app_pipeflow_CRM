@@ -733,13 +733,100 @@ assinatura válida passa da verificação e chega ao registro do `event.id`. **N
 
 ### Entregas — polimento
 
-- [ ] `loading.tsx` e `error.tsx` em todas as rotas autenticadas
-- [ ] Toda mutação com estado de carregamento e feedback visível
+- [x] `loading.tsx` e `error.tsx` em todas as rotas autenticadas
+- [x] Toda mutação com estado de carregamento e feedback visível
 - [ ] Acessibilidade: foco visível, navegação por teclado no Kanban, labels em todos os inputs, contraste AA
-- [ ] Responsividade revisada em 360px, 768px e 1440px
+- [x] Responsividade revisada em 360px, 768px e 1440px
 - [ ] Textos revisados contra o tom de voz do CLAUDE.md §7 — sem infantilização
 - [ ] Nenhum log de depuração no código; `npm run lint` e `npm run build` limpos
 - [ ] Metadata e Open Graph na landing; `robots.txt` bloqueando a área autenticada
+
+> **Revisão de responsividade e polish visual (leva `feat/deploy`).** As páginas públicas
+> (landing, login, signup, recuperar-senha) foram verificadas visualmente em 360px, 768px e
+> 1440px com Playwright headless, screenshot por screenshot — nenhuma quebra de layout, overflow
+> ou espaçamento incorreto encontrado. Uma aparente lacuna enorme entre o hero e o rodapé da
+> landing no primeiro screenshot em tela cheia era artefato da própria captura (o
+> `IntersectionObserver` do `Reveal` só dispara com o scroll real do usuário, e a captura
+> `fullPage` do Playwright redimensiona o viewport sem simular scroll); refeita com scroll
+> incremental antes da captura, a página renderiza por completo.
+>
+> **Achado real, corrigido.** `components/ui/dialog.tsx` (o `DialogContent` do shadcn) não tinha
+> `max-height` nem `overflow-y`: um formulário alto — o de lead (7 campos) ou o de negócio (6
+> campos) — não cabe na altura de um celular comum e não havia como rolar até o botão de salvar,
+> só cortava o conteúdo. Corrigido com `max-h-[calc(100vh-2rem)] overflow-y-auto` no contêiner do
+> diálogo, um padrão do próprio shadcn para conteúdo longo; beneficia todo diálogo do produto
+> (lead, negócio, convite, novo workspace) sem precisar de ajuste por componente. `npx tsc
+> --noEmit` e `npm run lint` limpos depois do ajuste.
+>
+> **Telas autenticadas revisadas por leitura de código, não visualmente (primeira leva).**
+> Dashboard, leads, pipeline e settings já têm tratamento responsivo cuidadoso herdado de cada
+> milestone de origem — colunas que colapsam em vez de rolar (`leads-table.tsx`), toolbar de
+> filtros que empilha abaixo de `sm` (`leads-toolbar.tsx`), breadcrumb que vira marca no mobile e
+> sidebar por `Sheet` (`topbar.tsx`), Kanban com rolagem horizontal dedicada e cada coluna com a
+> própria rolagem vertical (`pipeline-board.tsx`), gráfico do funil em `ResponsiveContainer`
+> (`sales-funnel.tsx`). Nenhuma quebra encontrada na leitura. Sem uma conta de teste confirmada no
+> projeto Supabase remoto nesta sessão, essas telas não foram abertas num navegador — o usuário
+> optou por pular a verificação visual delas nesta leva em vez de fornecer credenciais.
+>
+> **Segunda leva: verificação ao vivo do app inteiro, autenticado, em 375px/768px/1440px.**
+> Pedido explícito de continuar a revisão cobrindo sidebar, pipeline, tabelas e dashboard "de
+> verdade". Criada uma conta de teste descartável via Admin API (`auth.admin.createUser`, e-mail
+> pré-confirmado), login feito pela tela real de `/login`, onboarding preenchido pela UI real —
+> nada de sessão forjada. O workspace foi populado com 6 leads, 10 negócios nas 6 etapas e 3
+> atividades via `service_role` (mais um segundo membro e um convite pendente, para exercitar
+> tabela com 2+ linhas). Todas as telas percorridas com Playwright, incluindo o menu mobile
+> (`Sheet`) e a navegação por ele. Workspace, membros e os dois usuários de teste apagados ao
+> final — `workspaces` cai em cascata sobre `workspace_members`/`invites`/`leads`/`deals`/
+> `activities`/`subscriptions`, e só depois o usuário (a FK de `owner_id` é `on delete restrict`,
+> então a ordem importa). Confirmado sem sobra: nenhum workspace nem usuário `pf-uitest-*`
+> remanescente.
+>
+> Quatro achados reais, todos corrigidos:
+>
+> 1. **Hydration mismatch em toda carga do Pipeline** (`components/pipeline/pipeline-board.tsx`).
+>    O `DndContext` do `@dnd-kit` gera o id de `aria-describedby` a partir de um contador
+>    global quando a prop `id` não é passada, e esse contador não concorda entre a renderização do
+>    servidor e a primeira renderização do cliente — o React acusava o mismatch em todo carregamento
+>    da tela (visível no console, silencioso na tela). Corrigido com `id="pipeline-board"` fixo,
+>    exatamente o que a documentação de acessibilidade do dnd-kit recomenda para SSR. Confirmado
+>    zero erros de console depois do fix, em `/pipeline` nos três tamanhos.
+> 2. **Tabela de membros quebra em 375px com um segundo colaborador.** `members-table.tsx` não
+>    tinha `table-fixed`: numa tabela `auto` (o padrão), uma coluna sem largura própria cresce para
+>    caber o conteúdo em vez de encolher, então o `truncate` de `min-w-0` nunca tinha o que truncar.
+>    Com um nome longo ("Anne Beatriz Nascimento de Oliveira") a tabela inteira ficava mais larga
+>    que o cartão e o cabeçalho "Papel" e o valor do select apareciam cortados no meio da palavra —
+>    não é um scroll contido, é a coluna de fato sem o espaço que precisava. Corrigido com
+>    `table-fixed` + larguras explícitas em Papel/Entrou em/Ações, e-mail do membro escondido
+>    abaixo de `sm` (mesmo padrão de `leads-table.tsx`), e o `SelectTrigger` do papel encolhido de
+>    `w-32` para `w-28`. O mesmo problema, mesma causa, apareceu em `pending-invites.tsx` com um
+>    e-mail longo — mesma correção.
+> 3. **Tabela de leads sangra em 768px.** Mesma causa-raiz do achado 2, mas mais sério: com a
+>    coluna "Empresa" revelada a partir de `md` (768px) competindo por espaço com Status, Criado em
+>    e Ações, o orçamento de largura das colunas fixas somava mais que o espaço disponível, e a
+>    coluna "Lead" — a única sem largura própria — colapsava para **0px**. O nome do lead
+>    desaparecia da tela inteiramente (confirmado via `getBoundingClientRect`), e o cabeçalho
+>    "Lead"/"Empresa" aparecia sobreposto. Corrigido adiando a revelação de Empresa/Responsável de
+>    `md` para `lg` — a 768px sobra só Lead, Status, Criado em e Ações, orçamento que cabe — e
+>    dando à coluna Status uma largura maior em telas grandes (`lg:w-44`) já que o rótulo mais
+>    longo, "Desqualificado", é mais largo que o crachá `label-mono` sugere à primeira vista (129px
+>    medidos). Como nenhuma largura fixa cobre com segurança o pior caso em toda largura de tela, o
+>    próprio `StatusBadge` ganhou `truncate` como rede de segurança dentro da tabela — ele
+>    reticencia em vez de vazar para a célula vizinha quando a coluna realmente não tem os ~145px
+>    que o rótulo pede.
+> 4. **Duas rotas sem skeleton de carregamento próprio.** `/leads` e as três abas de `/settings`
+>    caíam no fallback genérico de `(shell)/loading.tsx` — funcional, mas sem a mesma atenção que
+>    `dashboard/loading.tsx` e `pipeline/loading.tsx` já tinham. Adicionados
+>    `app/(app)/(shell)/leads/loading.tsx` (espelha cabeçalho, barra de filtros e tabela, com a
+>    mesma visibilidade de coluna por breakpoint da tabela real) e
+>    `app/(app)/(shell)/settings/loading.tsx` (cabeçalho, abas e um bloco de card genérico — o
+>    layout de settings faz sua própria busca async, então este arquivo cobre a chegada da aba
+>    *e* do layout ao mesmo tempo, não só o conteúdo de uma aba específica).
+>
+> Todas as demais telas — dashboard (vazio e populado), detalhe de lead, pipeline board (vazio e
+> com 10 negócios nas 6 etapas), settings/workspace, settings/billing, o diálogo de negócio
+> reaberto e rolado até o rodapé em 375×667 (confirma o fix de `dialog.tsx` da primeira leva com
+> conteúdo real) — passaram sem ajuste. `npx tsc --noEmit` e `npm run lint` limpos depois de cada
+> correção.
 
 ### Entregas — segurança
 

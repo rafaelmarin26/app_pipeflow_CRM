@@ -43,15 +43,20 @@ export function MembersTable({
       />
 
       <div className="overflow-hidden rounded-lg border border-hairline bg-panel">
-        <Table>
+        {/* `table-fixed` with explicit widths on the narrow columns, so the
+            "Pessoa" column is the one that gives — its `truncate` classes
+            only have an effect once the column itself has a bounded width;
+            under the default `auto` layout a long name just grows the table
+            past the card, off the edge of a 375px screen. */}
+        <Table className="table-fixed">
           <TableHeader>
             <TableRow className="border-hairline hover:bg-transparent">
               <TableHead className="label-mono text-faint">Pessoa</TableHead>
-              <TableHead className="label-mono text-faint">Papel</TableHead>
-              <TableHead className="label-mono hidden text-faint sm:table-cell">
+              <TableHead className="label-mono w-28 text-faint sm:w-32">Papel</TableHead>
+              <TableHead className="label-mono hidden text-faint sm:table-cell sm:w-28">
                 Entrou em
               </TableHead>
-              <TableHead className="label-mono w-[88px] text-right text-faint">
+              <TableHead className="label-mono w-[72px] text-right text-faint">
                 <span className="sr-only">Ações</span>
               </TableHead>
             </TableRow>
@@ -78,7 +83,7 @@ export function MembersTable({
                           {member.profile.name}
                           {isSelf ? " (você)" : ""}
                         </div>
-                        <div className="truncate text-xs text-muted-foreground">
+                        <div className="hidden truncate text-xs text-muted-foreground sm:block">
                           {member.profile.email}
                         </div>
                       </div>

@@ -25,15 +25,18 @@ export function PendingInvites({ invites }: { invites: InviteWithInviter[] }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="px-0">
-        <Table>
+        {/* `table-fixed`, same reasoning as `members-table.tsx`: a long e-mail
+            needs a bounded column before `truncate` does anything, or it just
+            grows the table past the card on a narrow screen. */}
+        <Table className="table-fixed">
           <TableHeader>
             <TableRow className="border-hairline hover:bg-transparent">
               <TableHead className="label-mono text-faint">E-mail</TableHead>
-              <TableHead className="label-mono text-faint">Papel</TableHead>
-              <TableHead className="label-mono hidden text-faint sm:table-cell">
+              <TableHead className="label-mono w-20 text-faint sm:w-28">Papel</TableHead>
+              <TableHead className="label-mono hidden text-faint sm:table-cell sm:w-32">
                 Enviado por
               </TableHead>
-              <TableHead className="label-mono hidden text-faint sm:table-cell">
+              <TableHead className="label-mono hidden text-faint sm:table-cell sm:w-28">
                 Expira em
               </TableHead>
               <TableHead className="label-mono w-[88px] text-right text-faint">
@@ -44,8 +47,10 @@ export function PendingInvites({ invites }: { invites: InviteWithInviter[] }) {
           <TableBody>
             {invites.map((invite) => (
               <TableRow key={invite.id} className="h-11 border-hairline hover:bg-elevated">
-                <TableCell className="py-2 text-sm text-foreground">{invite.email}</TableCell>
-                <TableCell className="py-2 text-sm text-muted-foreground">
+                <TableCell className="truncate py-2 text-sm text-foreground">
+                  {invite.email}
+                </TableCell>
+                <TableCell className="truncate py-2 text-sm text-muted-foreground">
                   {MEMBER_ROLE_LABELS[invite.role]}
                 </TableCell>
                 <TableCell className="hidden py-2 text-sm text-muted-foreground sm:table-cell">
