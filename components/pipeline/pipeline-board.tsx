@@ -247,6 +247,11 @@ export function PipelineBoardView({
 
   return (
     <DndContext
+      // dnd-kit generates the `aria-describedby` id from a module-level
+      // counter when this prop is omitted, which does not agree between the
+      // server render and the client's first render (React logs a hydration
+      // mismatch on every load). A fixed id makes it deterministic.
+      id="pipeline-board"
       sensors={sensors}
       collisionDetection={closestCorners}
       accessibility={{ announcements, screenReaderInstructions }}
