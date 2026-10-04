@@ -1,30 +1,21 @@
 import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { safeNextPath } from "@/lib/safe-redirect";
 
 /**
- * Only a same-origin, relative path is a safe redirect target. `next` comes
- * straight off the query string of a public URL, so it is attacker-editable —
- * a value like `@evil.com` turns `${origin}${next}` into
- * `https://app.example.com@evil.com`, which browsers parse as host
- * `evil.com` with `app.example.com` as userinfo (the classic "@" open
- * redirect trick). Requiring exactly one leading slash rules that out along
- * with the protocol-relative `//evil.com` variant, since neither can smuggle
- * a scheme or host past this check.
+ * Exchanges a Supabase auth `code` for a session. Kept for any flow that
+ * still uses the PKCE code-exchange redirect (OAuth providers, if added
+ * later) — signup confirmation moved to `/confirmar` (PLAN.md M17), which
+ * verifies a `token_hash` behind a real button click instead of a bare GET,
+ * because GoTrue's `/verify` endpoint auto-consumes the one-time token on
+ * the first request that hits it. Gmail and corporate mail scanners
+ * pre-fetch links to scan them for safety before the user ever opens the
+ * message, so this route — reached via a link that performs the stateful
+ * exchange on page load — was found live to let Google's own prefetch beat
+ * the real user to the link, burning the token before they could click it.
  */
-function safeNextPath(value: string | null): string {
-  if (value && value.startsWith("/") && !value.startsWith("//")) {
-    return value;
-  }
-  return "/dashboard";
-}
 
-/**
- * Exchanges the Supabase auth `code` for a session — PLAN.md M11. Every flow
- * that redirects a user back from an e-mail link (signup confirmation today,
- * password recovery and invite acceptance later) lands here first; `next`
- * says where to send them once the session exists.
- */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");

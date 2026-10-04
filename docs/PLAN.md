@@ -935,17 +935,94 @@ assinatura válida passa da verificação e chega ao registro do `event.id`. **N
 
 ### Entregas — produção
 
-- [ ] Migrations aplicadas no projeto Supabase de produção
-- [ ] Projeto na Vercel com as 8 variáveis de ambiente configuradas
+- [x] Migrations aplicadas no projeto Supabase de produção
+- [x] Projeto na Vercel com as 8 variáveis de ambiente configuradas
 - [ ] Stripe em modo live, com endpoint de webhook apontando para o domínio de produção
 - [ ] Domínio do Resend verificado para envio
-- [ ] URLs de redirect do Supabase Auth apontando para o domínio de produção
+- [x] URLs de redirect do Supabase Auth apontando para o domínio de produção
 - [ ] Smoke test em produção: signup → onboarding → lead → negócio → upgrade
-- [ ] README atualizado com o link de produção
+- [x] README atualizado com o link de produção
+
+> **Leva `feat/deploy` — criação do projeto Vercel e correções em produção.**
+>
+> **Vercel.** Projeto `rafael-marin/pipeflow-crm` criado via CLI e conectado ao repositório
+> GitHub, com as 8 variáveis de ambiente do CLAUDE.md §6 configuradas no ambiente Production. O
+> primeiro `vercel deploy` foi promovido a produção automaticamente pela própria Vercel (sem
+> precisar de `--prod` — comportamento do primeiro deploy de um projeto novo) e saiu com
+> **Vercel Authentication (SSO) ligada por padrão**, bloqueando acesso público a qualquer rota,
+> inclusive a landing; desligada via `vercel project protection disable --sso`. URL de produção:
+> `https://pipeflow-crm-navy.vercel.app` (o nome simples `pipeflow-crm.vercel.app` já estava em
+> uso por outro projeto).
+>
+> **Migrations.** `20260929010000_add_invite_send_log.sql` (já existente no repo desde a leva
+> anterior, nunca aplicada no remoto) e uma nova, `20261002010000_revoke_stray_function_grants.sql`,
+> aplicadas via MCP do Supabase. A segunda corrige um achado da auditoria: `create_workspace_with_owner()`
+> ainda permitia `EXECUTE` para `anon` — a migration `20260920030000` que deveria ter revogado isso
+> nunca tinha pegado de fato no projeto remoto, apesar desta mesma seção (M10) registrar o
+> contrário; e `handle_user_profile_sync()` (função só de trigger) estava exposta via RPC a
+> `anon`/`authenticated` sem necessidade. As duas foram revogadas; confirmado via `get_advisors` e
+> consulta direta a `has_function_privilege`.
+>
+> **Webhook do Stripe.** Não existia nenhum endpoint de webhook registrado no Stripe (nem em
+> teste) — o `STRIPE_WEBHOOK_SECRET` até então vinha só de `stripe listen` local, que nunca
+> funciona em produção. Criado via API um endpoint em **modo teste** apontando para
+> `https://pipeflow-crm-navy.vercel.app/api/webhooks/stripe` com os 4 eventos do M16; o novo
+> `whsec_...` foi atualizado na Vercel. Testado ao vivo com `stripe trigger invoice.payment_failed`:
+> o evento apareceu processado em `stripe_events` da tabela de produção. Stripe **permanece em
+> modo teste** por decisão explícita — ativar modo live exige o usuário configurar a conta Stripe
+> (CNPJ/dados bancários) no Dashboard, fora do alcance desta sessão.
+>
+> **Achado de segurança: link de confirmação de cadastro consumível por scanner de e-mail.** Um
+> teste de signup em produção (via API, e-mail real) mostrou o link de confirmação sendo
+> consumido por um IP do Google (faixa `172.253.x.x`, poucos segundos após o envio) antes do clique
+> real do usuário — confirmado nos logs do Supabase (`query_logs`): dois `GET /verify`
+> sucedidos, o segundo e os seguintes todos `403 one-time token not found`. É o problema
+> conhecido de scanners de segurança de e-mail (Gmail, Outlook corporativo) pré-buscando todo
+> link de uma mensagem antes do destinatário abrir — e o link de confirmação do Supabase é um
+> `GET` que consome o token de uso único na primeira requisição, não importa quem a faça.
+>
+> **Corrigido com uma nova rota `/confirmar`** (`app/(auth)/confirmar/`), que não consome nada ao
+> carregar — só exibe um botão "Confirmar e-mail". Só o clique real (via `ConfirmEmailButton`,
+> `useTransition` chamando a Server Action `confirmEmail`) roda `supabase.auth.verifyOtp()`, que é
+> um `POST`, nunca disparado por um scanner que só faz `GET` na página. `lib/safe-redirect.ts`
+> nasceu nesta leva com o `safeNextPath()` extraído de `/callback` (que ambas as rotas agora
+> compartilham), e `confirmEmailSchema` (`lib/validations/auth.ts`) aceita `type: "signup" |
+> "recovery"` — "recovery" já deixado pronto para quando a recuperação de senha pendente do M11
+> for implementada, que vai precisar exatamente desta mesma proteção. `/callback` continua
+> existindo para um eventual fluxo de código PKCE (OAuth), mas a confirmação de cadastro não passa
+> mais por ele. Testado ao vivo em produção duas vezes: a primeira via link real de e-mail
+> (reproduziu o bug, token já queimado pelo Google); a segunda com um link gerado via Admin API
+> (`generate_link`, sem passar pelo Gmail) aberto manualmente pelo usuário — o clique no botão
+> confirmou o e-mail e levou direto ao onboarding, como esperado. Os dois usuários de teste
+> (`pf-smoketest-deploy`, `pf-confirmtest`) foram apagados ao final.
+>
+> **Bloqueio restante: o template "Confirm signup" do Supabase não pode ser editado.** O projeto
+> usa o serviço de e-mail compartilhado do Supabase (sem SMTP próprio configurado), que trava a
+> edição de assunto/corpo do template — mesmo mudando os campos no Studio, o e-mail real continua
+> saindo com o `{{ .ConfirmationURL }}` padrão (o link vulnerável direto no `/verify` do
+> Supabase, nunca `/confirmar`). Editar o template exige SMTP próprio; o candidato natural é o
+> Resend, já integrado para convites — mas o domínio sandbox `onboarding@resend.dev` só entrega
+> e-mail para o dono da conta Resend, não para terceiros. **Ou seja, o mesmo bloqueio de domínio
+> próprio** (ver item "Domínio do Resend" abaixo) impede tanto os convites de colaborador quanto
+> agora a correção do e-mail de confirmação de cadastro de funcionarem de verdade para usuários
+> reais. Por decisão do usuário, fica registrado como pendência — o app está no ar, mas
+> cadastro e convite por e-mail só funcionam de ponta a ponta para a própria conta de teste do
+> desenvolvedor até haver um domínio.
+>
+> **Supabase Auth URLs.** Site URL trocada de `localhost` para `https://pipeflow-crm-navy.vercel.app`
+> e `https://pipeflow-crm-navy.vercel.app/**` adicionada às Redirect URLs (Dashboard — sem
+> ferramenta de MCP para isso). Confirmado funcionando: o `/verify` bem-sucedido nos logs teve
+> `referer` apontando para o domínio de produção.
+>
+> **Smoke test parcial.** Signup → confirmação de e-mail → onboarding validado ao vivo (ver
+> acima). Lead → negócio → upgrade não foi exercitado nesta leva.
 
 ### Validação
 
 Fluxo completo executado em produção com uma conta nova, incluindo um pagamento de teste e a chegada de um convite por e-mail.
+
+Pendente: Stripe live, domínio verificado no Resend/SMTP do Supabase, e o restante do smoke test
+(lead → negócio → upgrade).
 
 **Commit final:** `chore: production hardening and deploy configuration`
 

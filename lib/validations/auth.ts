@@ -61,6 +61,22 @@ export const signupSchema = z.object({
 
 export const forgotPasswordSchema = z.object({ email });
 
+/**
+ * `/confirmar` (PLAN.md M17) — `token_hash` and `type` come from the e-mail
+ * link's query string, hidden fields the button-click form resubmits as-is.
+ * `type` is restricted to the OTP types this app actually sends: "signup"
+ * today, "recovery" once password reset (M11's pending item) sends a link
+ * through this same page instead of the default Supabase redirect.
+ */
+export const confirmEmailSchema = z.object({
+  tokenHash: z.string().min(1, "Link de confirmação inválido."),
+  type: z.enum(["signup", "recovery"], {
+    error: "Link de confirmação inválido.",
+  }),
+  next: z.string(),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type SignupInput = z.infer<typeof signupSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ConfirmEmailInput = z.infer<typeof confirmEmailSchema>;

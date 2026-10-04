@@ -3,6 +3,8 @@
 CRM de vendas para PMEs, freelancers e pequenos times. Multi-empresa, com pipeline Kanban,
 gestão de leads com timeline de atividades, dashboard de métricas e plano gratuito de verdade.
 
+**Produção:** https://pipeflow-crm-navy.vercel.app (Stripe ainda em modo teste — ver docs/PLAN.md M17)
+
 ## Stack
 
 Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · shadcn/ui · Supabase (Postgres, RLS, Auth) · Stripe · Resend
