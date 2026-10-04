@@ -13,10 +13,10 @@ import { signupSchema, type SignupInput } from "@/lib/validations/auth";
  *
  * This project has e-mail confirmation ON (confirmed live against the
  * Supabase project), so `signUp` comes back with `data.session === null`
- * until the user clicks the confirmation link. `emailRedirectTo` is what
- * points that link at our own `/callback` instead of the project's default
- * Site URL — without it, Supabase still sends the e-mail, but the link lands
- * on `/` with an unused `?code=`, and the session is never established.
+ * until the user clicks the confirmation link. The "Confirm signup" e-mail
+ * template (Supabase Dashboard) sends that link to `/confirmar`, not here —
+ * `emailRedirectTo` is kept only as the fallback `{{ .RedirectTo }}` would
+ * resolve to if the template ever reverts to Supabase's default.
  */
 export type SignupResult = { error: string } | { needsConfirmation: true } | void;
 

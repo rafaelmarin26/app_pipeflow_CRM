@@ -32,6 +32,8 @@ export function translateAuthError(error: unknown): string {
       return "Muitas tentativas. Aguarde um instante e tente de novo.";
     case "same_password":
       return "A nova senha precisa ser diferente da atual.";
+    case "otp_expired":
+      return "Este link expirou ou já foi usado. Peça um novo e tente de novo.";
     default:
       return "Não foi possível concluir. Tente novamente em instantes.";
   }
